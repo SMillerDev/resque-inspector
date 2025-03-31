@@ -28,3 +28,7 @@ func PrintJobCmdResult(data result.Result[models.JobInterface]) {
 		println(val.Stringify())
 	}
 }
+
+func filterFromCmdline() result.Filter {
+	return result.Filter{}
+}

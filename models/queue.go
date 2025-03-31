@@ -1,29 +1,25 @@
 package models
 
 import (
-	"regexp"
 	"resque-inspector/resque"
 	"resque-inspector/result"
 )
 
 type Queue struct {
-	Id       string
+	Id       string `json:"id"`
 	Name     string `json:"name"`
 	JobCount int64  `json:"job_count"`
 	Jobs     []Job  `json:"jobs"`
 }
 
-func GetQueueList(filter string) result.Result[Queue] {
+func GetQueueList(filter result.Filter) result.Result[Queue] {
 	queues := resque.GetList("queues", true)
 	var data []Queue
 	filtered := 0
-	for queue := range queues {
-		match, _ := regexp.MatchString(filter, queue)
-		if !match {
-			filtered++
+	for _, queue := range queues {
+		if result.ShouldFilterString(filter, queue) {
 			continue
 		}
-
 		structure := Queue{
 			Id:       queue,
 			Name:     queue,
@@ -45,5 +41,14 @@ func GetQueueList(filter string) result.Result[Queue] {
 		Total:    len(data),
 		Filtered: filtered,
 		Items:    data,
+	}
+}
+
+func GetQueue(name string) Queue {
+	return Queue{
+		Id:       name,
+		Name:     name,
+		JobCount: resque.GetEntryCount(name, true),
+		Jobs:     []Job{},
 	}
 }

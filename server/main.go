@@ -2,11 +2,15 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
+	"log"
 	"net/http"
+	"resque-inspector/result"
+	"time"
 )
 
-var Filter string
+const httpAddr = ":5678"
 
 func returnError(w http.ResponseWriter, code int, data interface{}) {
 	w.WriteHeader(code)
@@ -15,11 +19,29 @@ func returnError(w http.ResponseWriter, code int, data interface{}) {
 	_, _ = io.WriteString(w, string(jsonData))
 }
 
-func getFilter(r *http.Request) string {
-	r.URL.Query().Get("filter")
-	if Filter == "" {
-		Filter = ".*"
+func filterFromRequest(r *http.Request) result.Filter {
+	return result.Filter{
+		Regex:     r.URL.Query().Get("filter"),
+		Class:     "",
+		Exception: "",
+		Queue:     "",
+		StartDate: time.Time{},
+		EndDate:   time.Time{},
+		Filtered:  0,
 	}
+}
 
-	return Filter
+func Serve() {
+	http.HandleFunc("/{page}", getUi)
+	http.HandleFunc("/", getUi)
+
+	http.HandleFunc("/api/v1/{type}", getRootApi)
+	http.HandleFunc("/api/v1/queues/{queue}/jobs", getJobsApi)
+
+	err := http.ListenAndServe(httpAddr, nil)
+	if errors.Is(err, http.ErrServerClosed) {
+		log.Default().Printf("server closed\n")
+	} else if err != nil {
+		log.Default().Fatalf("error starting server: %s\n", err)
+	}
 }

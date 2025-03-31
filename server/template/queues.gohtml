@@ -1,0 +1,31 @@
+{{template "header" $}}
+    <table class="table" id="queueList">
+        <thead>
+        <tr>
+            <th scope="col">Queue</th>
+            <th scope="col">Items</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+            {{range $queue := .queues}}
+                <tr>
+                    <td>{{$queue.Name}}</td>
+                    <td>{{$queue.JobCount}}</td>
+                    <td><a href="/?queue={{$queue.Id}}" class="btn btn-primary">Jobs</a> <a href="#" class="btn btn-danger">Clear</a></td>
+                </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <div class="align-content-center">
+        <nav aria-label="Pagination for job information">
+            <ul class="pagination justify-content-center">
+                <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+                <li class="page-item"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+        </nav>
+    </div>
+{{template "footer" $}}

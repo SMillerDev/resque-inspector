@@ -12,21 +12,19 @@ type JobInterface interface {
 	Stringify() string
 }
 type Job struct {
-	Payload struct {
-		Class     string                   `json:"class"`
-		Args      []map[string]interface{} `json:"args"`
-		Id        string                   `json:"id"`
-		Prefix    string                   `json:"prefix"`
-		QueueTime float64                  `json:"queue_time"`
-	} `json:"payload"`
+	Class     string                   `json:"class"`
+	Args      []map[string]interface{} `json:"args"`
+	Id        string                   `json:"id"`
+	Prefix    string                   `json:"prefix"`
+	QueueTime float64                  `json:"queue_time"`
 }
 
 func (f Job) Stringify() string {
-	return fmt.Sprintf("class: %s", f.Payload.Class)
+	return fmt.Sprintf("class: %s", f.Class)
 }
 
 type FailedJob struct {
-	Job
+	Payload   Job       `json:"payload"`
 	FailedAt  time.Time `json:"failed_at"`
 	Exception string    `json:"exception"`
 	Error     string    `json:"error"`
@@ -39,13 +37,13 @@ func (f FailedJob) Stringify() string {
 	return fmt.Sprintf("error: %s\n\texception: %s\n\tqueue: %s\n", f.Error, f.Exception, f.Queue)
 }
 
-func (q Queue) GetJobList(filter string) result.Result[JobInterface] {
+func (q Queue) GetJobList(filter result.Filter) result.Result[JobInterface] {
 	resque.PrepareClient()
-	defer resque.Client.Close()
 
-	var filtered = 0
 	var entries []string
-	var data []JobInterface
+	var classes = make([]string, 0)
+	var exceptions = make([]string, 0)
+	var data = make([]JobInterface, 0)
 
 	if q.Id == "failed" {
 		entries = resque.GetEntries(q.Id, true)
@@ -58,10 +56,14 @@ func (q Queue) GetJobList(filter string) result.Result[JobInterface] {
 			var job FailedJob
 			err := json.Unmarshal([]byte(entry), &job)
 			if err != nil {
-				filtered++
+				continue
+			}
+			if ShouldFilterFailedJob(filter, job) {
 				continue
 			}
 
+			classes = append(classes, job.Payload.Class)
+			exceptions = append(exceptions, job.Exception)
 			data = append(data, job)
 			continue
 		}
@@ -69,17 +71,32 @@ func (q Queue) GetJobList(filter string) result.Result[JobInterface] {
 		var job Job
 		err := json.Unmarshal([]byte(entry), &job)
 		if err != nil {
-			filtered++
 			continue
 		}
 
+		classes = append(classes, job.Class)
 		data = append(data, job)
 	}
 
 	return result.Result[JobInterface]{
-		Filter:   filter,
-		Filtered: filtered,
-		Total:    len(data),
-		Items:    data,
+		Filter:     filter,
+		Filtered:   filter.Filtered,
+		Total:      len(data),
+		Classes:    classes,
+		Exceptions: exceptions,
+		Items:      data,
 	}
+}
+
+func ShouldFilterFailedJob(f result.Filter, failed FailedJob) bool {
+	if f.Class == "" && f.Exception == "" {
+		return false
+	}
+	if f.Class == failed.Payload.Class {
+		return true
+	}
+	if f.Exception == failed.Exception {
+		return true
+	}
+	return false
 }
