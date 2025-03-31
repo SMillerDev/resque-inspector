@@ -23,15 +23,16 @@ func PrepareClient() {
 	Client = preClient
 }
 
-func GetList(key string, shouldPrefix bool) map[string]string {
+func GetList(key string, shouldPrefix bool) []string {
 	PrepareClient()
 	ctx := context.Background()
 	if shouldPrefix {
-		key = Prefix + ":" + key
+		key = Prefix + key
 	}
-	members, err := Client.Do(ctx, Client.B().Smembers().Key(key).Build()).AsStrMap()
+	members, err := Client.Do(ctx, Client.B().Smembers().Key(key).Build()).AsStrSlice()
 	if err != nil {
-		log.Default().Fatal(err)
+		log.Default().Printf("Failed to get list for \"%s\": %s", key, err)
+		return make([]string, 0)
 	}
 
 	return members
@@ -41,11 +42,11 @@ func GetEntryCount(queue string, shouldPrefix bool) int64 {
 	PrepareClient()
 	ctx := context.Background()
 	if shouldPrefix {
-		queue = Prefix + ":" + queue
+		queue = Prefix + queue
 	}
 	count, err := Client.Do(ctx, Client.B().Llen().Key(queue).Build()).AsInt64()
 	if err != nil {
-		log.Default().Fatal(err)
+		log.Default().Printf("Failed to get entry count for \"%s\": %s", queue, err)
 		return -1
 	}
 
@@ -56,14 +57,18 @@ func GetEntries(queue string, shouldPrefix bool) []string {
 	PrepareClient()
 	ctx := context.Background()
 	if shouldPrefix {
-		queue = Prefix + ":" + queue
+		queue = Prefix + queue
 	}
 
 	count := GetEntryCount(queue, false)
+	if count <= 0 {
+		return []string{}
+	}
 
 	entries, err := Client.Do(ctx, Client.B().Lrange().Key(queue).Start(0).Stop(count).Build()).AsStrSlice()
 	if err != nil {
-		log.Default().Fatal(err)
+		log.Default().Printf("Failed to get entries for \"%s\": %s", queue, err)
+		return []string{}
 	}
 
 	return entries
@@ -73,10 +78,11 @@ func GetEntry(entry string, shouldPrefix bool) string {
 	PrepareClient()
 	ctx := context.Background()
 	if shouldPrefix {
-		entry = Prefix + ":" + entry
+		entry = Prefix + entry
 	}
 	item, err := Client.Do(ctx, Client.B().Get().Key(entry).Build()).ToString()
 	if err != nil {
+		log.Default().Printf("Failed to get entry for \"%s\": %s", entry, err)
 		return ""
 	}
 
@@ -84,34 +90,6 @@ func GetEntry(entry string, shouldPrefix bool) string {
 }
 
 /**
-resque_failed() {
-  local field="$1"
-  local value="$2"
-
-  if [[ -z "${field}" ]]; then
-    resque_failed_all_jobs
-    return
-  fi
-
-  if [ "${field}" != 'class' ] \
-    && [ "${field}" != 'worker' ] \
-    && [ "${field}" != 'queue' ] \
-    && [ "${field}" != 'exception' ]; then
-    error "Invalid failed field argument '${field}'"
-  fi
-
-  # adjusment to job structure
-  # other fields are already at the top level
-  if [ "${field}" = 'class' ]; then
-    field='payload.class'
-  fi
-
-  if [ -z "${value}" ]; then
-    resque_failed_summary "${field}"
-  else
-    resque_failed_filtered_jobs "${field}" "${value}"
-  fi
-}
 
 resque_failed_all_jobs() {
   local failed_count

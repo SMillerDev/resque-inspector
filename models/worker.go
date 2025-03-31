@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"regexp"
 	"resque-inspector/resque"
 	"resque-inspector/result"
 	"strings"
@@ -16,14 +15,12 @@ type WorkerSlot struct {
 	Entry  Job    `json:"entry"`
 }
 
-func GetWorkerList(filter string) result.NamedResult[WorkerSlot] {
+func GetWorkerList(filter result.Filter) result.NamedResult[WorkerSlot] {
 	workers := resque.GetList("workers", true)
 	data := make(map[string][]WorkerSlot)
 	var filtered = 0
-	for worker := range workers {
-		match, _ := regexp.MatchString(filter, worker)
-		if !match {
-			filtered++
+	for _, worker := range workers {
+		if result.ShouldFilterString(filter, worker) {
 			continue
 		}
 

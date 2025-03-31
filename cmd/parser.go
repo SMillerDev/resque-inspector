@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"maps"
-	"net/http"
 	"os"
 	"resque-inspector/resque"
 	"resque-inspector/server"
@@ -31,8 +29,6 @@ const defaultRedisPort = 6379
 const defaultRedisHost = "127.0.0.1"
 const defaultFilter = ".*"
 
-const httpAddr = ":5678"
-
 func ParseCommandLine() {
 	subcommands := setupSubCommands()
 	if len(flag.Args()) < 1 {
@@ -55,7 +51,6 @@ func ParseCommandLine() {
 		os.Exit(1)
 	}
 
-	setupFilter()
 	setupDsn()
 	setupJson()
 
@@ -76,22 +71,14 @@ func ParseCommandLine() {
 	case "retry":
 		log.Default().Println("subcommand 'retry'")
 	case "serve":
-		http.HandleFunc("/", server.GetRoot)
-		http.HandleFunc("/api/v1/{type}", server.GetApi)
-
-		err := http.ListenAndServe(httpAddr, nil)
-		if errors.Is(err, http.ErrServerClosed) {
-			log.Default().Printf("server closed\n")
-		} else if err != nil {
-			log.Default().Fatalf("error starting server: %s\n", err)
-		}
+		server.Serve()
 	default:
 		log.Default().Printf("expected one of %v subcommands\n", maps.Keys(subcommands))
 	}
-}
 
-func setupFilter() {
-	server.Filter = Filter
+	if resque.Client != nil {
+		defer resque.Client.Close()
+	}
 }
 
 func setupJson() {

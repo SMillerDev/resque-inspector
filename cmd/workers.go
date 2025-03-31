@@ -6,7 +6,7 @@ import (
 )
 
 func getAllWorkersCmd() {
-	result := models.GetWorkerList(Filter)
+	result := models.GetWorkerList(filterFromCmdline())
 
 	PrintJsonResult(result)
 

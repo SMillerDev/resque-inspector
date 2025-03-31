@@ -1,0 +1,99 @@
+{{define "footer"}}
+<span class="float-end">Connected to <code>{{$.Dsn}}</code></span>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script>
+        function loadData(page) {
+            switch (page) {
+                case 'queues':
+                    loadQueues();
+                    break;
+                case 'workers':
+                    loadWorkers()
+                    break;
+                case '':
+                    loadJobs()
+                    break;
+                default:
+                    console.warn(`No data to load for ${page}`)
+                    break;
+            }
+        }
+        function loadJobs() {
+            let queue = document.getElementById("queues").value;
+            getApi(`queues/${queue}/jobs`, ".*").then( function (json) {
+                if (json === null) {
+                    console.log("No job data!")
+                    return
+                }
+                let html = "";
+                json["items"].forEach(item => {
+                    html += `<tr><td>${item["class"]}</td><td>${(new Date(item["queue_time"])).toISOString()}</td></tr>`
+                });
+                let classes = json["classes"].filter(onlyUnique);
+                let classSelect = document.getElementById("classes");
+                let classHtml = "<option selected>-- Select class --</option>";
+                classes.forEach(className => {
+                    classHtml += `<option value='${classes}'>${className}</option>`;
+                });
+                classSelect.innerHTML = classHtml;
+
+                console.log(classes);
+                let table = document.getElementById("jobList");
+                table.innerHTML = `<thead><tr><th scope="col">Class</th><th scope="col">Queued At</th></tr></thead><tbody>${html}</tbody>`;
+            }).catch(function (reason) {
+                console.log(reason)
+            });
+        }
+
+        function loadQueues() {
+            getApi("queues", ".*").then( function (json) {
+                if (json === null) {
+                    console.log("No Queue data!")
+                    return
+                }
+                let html = "";
+                json["items"].forEach(item => {
+                    html += `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <a href="#" class="btn btn-danger">Clear</a></td></tr>`
+                });
+                let table = document.getElementById("queueList");
+                table.innerHTML = `<thead><tr><th scope="col">Queue</th><th scope="col">Items</th><th scope="col"></th></tr></thead><tbody>${html}</tbody>`;
+            }).catch(function (reason) {
+                console.log(reason)
+            });
+        }
+
+        function loadWorkers() {
+            getApi("workers", ".*").then( function (json) {
+                if (json === null) {
+                    console.log("No worker data!")
+                    return
+                }
+                let html = "";
+                json["items"].forEach(item => {
+                    html += `<tr><td>${item["name"]}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>${item["entry"]}</td></tr>`
+                });
+                let table = document.getElementById("workerList");
+                table.innerHTML = `<thead><tr><th scope="col">Worker</th><th scope="col">Items</th></tr></thead><tbody>${html}</tbody>`;
+            }).catch(function (reason) {
+                console.log(reason)
+            });
+        }
+        async function getApi(path, filter, start = 0, offset = 10) {
+            const url = `/api/v1/${path}?filter=${encodeURIComponent(filter)}&start=${start}&offset=${offset}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            return await response.json()
+        }
+        function onlyUnique(value, index, array) {
+            return array.indexOf(value) === index;
+        }
+    </script>
+</body>
+</html>
+{{end}}
