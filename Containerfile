@@ -1,19 +1,17 @@
 # builder
-FROM golang:1.24-bookworm AS builder
+FROM ghcr.io/goreleaser/goreleaser:latest AS builder
 
 WORKDIR /build
 
-COPY go.mod go.sum ./
-RUN go mod download
 COPY . .
 
-RUN go build -trimpath -o resque-inspector resque-inspector
+RUN goreleaser build --single-target --auto-snapshot --clean
 
 # Create a production stage to run the application binary
 FROM scratch AS production
 
 WORKDIR /app
-COPY --from=builder /build/resque-inspector ./
+COPY --from=builder /build/dist/resque-inspector*/resque-inspector ./
 
 EXPOSE 5678
 CMD ["/app/resque-inspector", "serve"]
