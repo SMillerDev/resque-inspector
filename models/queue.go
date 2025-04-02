@@ -51,3 +51,7 @@ func GetQueue(name string) Queue {
 		Jobs:     []Job{},
 	}
 }
+
+func (q Queue) Clear() error {
+	return resque.Clear("queue:" + q.Id)
+}

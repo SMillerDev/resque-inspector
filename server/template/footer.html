@@ -61,7 +61,7 @@
 
                 let html = "";
                 json["items"].forEach(item => {
-                    html += `<tr><td>${item["class"]}</td><td>${(new Date(item["queue_time"])).toISOString()}</td></tr>`
+                    html += `<tr><td>${item["class"]}</td><td>${(new Date(item["queue_time"] * 1000)).toISOString()}</td></tr>`
                 });
                 document.getElementById("jobList").innerHTML = `<thead><tr><th scope="col">Class</th><th scope="col">Queued At</th></tr></thead><tbody>${html}</tbody>`;
             }).catch(function (reason) {
@@ -96,8 +96,16 @@
                 }
                 let html = "";
                 for (const key in json["items"]) {
-                    const item = json["items"][key];
-                    html += `<tr><td>${item["name"]}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>${item["entry"]}</td></tr>`
+                    const list = json["items"][key];
+                    list.forEach(item => {
+                        if (item["entry"]["class"] == "") {
+                            html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td></td></tr>`;
+                            return;
+                        }
+
+                        html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>$JSON.stringify({item["entry"])}</td></tr>`
+                    });
+
                 }
                 let table = document.getElementById("workerList");
                 table.innerHTML = `<thead><tr><th scope="col">Worker</th><th scope="col">Items</th></tr></thead><tbody>${html}</tbody>`;
@@ -117,7 +125,7 @@
             return str.join("&");
         }
 
-        async function getApi(path, filter, start = 0, offset = 10) {
+        async function getApi(path, filter, start = 0, offset = 25) {
             const url = `/api/v1/${path}?${query(filter)}&start=${start}&offset=${offset}`;
             const response = await fetch(url);
             if (!response.ok) {

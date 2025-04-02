@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"resque-inspector/resque"
+	"strconv"
 	"time"
 )
 
@@ -20,13 +21,15 @@ func returnError(w http.ResponseWriter, code int, data interface{}) {
 }
 
 func filterFromRequest(r *http.Request) resque.Filter {
+	start, _ := strconv.Atoi(r.URL.Query().Get("startDate"))
+	end, _ := strconv.Atoi(r.URL.Query().Get("endDate"))
 	return resque.Filter{
 		Regex:     r.URL.Query().Get("filter"),
-		Class:     "",
-		Exception: "",
-		Queue:     "",
-		StartDate: time.Time{},
-		EndDate:   time.Time{},
+		Class:     r.URL.Query().Get("class"),
+		Exception: r.URL.Query().Get("exception"),
+		Queue:     r.URL.Query().Get("queue"),
+		StartDate: time.UnixMilli(int64(start)),
+		EndDate:   time.UnixMilli(int64(end)),
 		Filtered:  0,
 	}
 }
@@ -37,6 +40,8 @@ func Serve() {
 
 	http.HandleFunc("/api/v1/{type}", getRootApi)
 	http.HandleFunc("/api/v1/queues/{queue}/jobs", getJobsApi)
+	http.HandleFunc("/api/v1/queues/{queue}/jobs/{id}", retryJobApi)
+	http.HandleFunc("/api/v1/queues/{queue}", clearApi)
 
 	err := http.ListenAndServe(httpAddr, nil)
 	if errors.Is(err, http.ErrServerClosed) {

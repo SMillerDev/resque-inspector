@@ -36,16 +36,16 @@ func (f FailedJob) Stringify() string {
 	return fmt.Sprintf("error: %s\n\texception: %s\n\tqueue: %s\n", f.Error, f.Exception, f.Queue)
 }
 
-func (q Queue) GetJobList(filter resque.Filter) resque.Result[JobInterface] {
+func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque.Result[JobInterface] {
 	var entries []string
 	var classes = make([]string, 0)
 	var exceptions = make([]string, 0)
 	var data = make([]JobInterface, 0)
 
 	if q.Id == "failed" {
-		entries = resque.GetEntries(q.Id)
+		entries = resque.GetEntries(q.Id, start, limit)
 	} else {
-		entries = resque.GetEntries("queue:" + q.Id)
+		entries = resque.GetEntries("queue:"+q.Id, start, limit)
 	}
 
 	for _, entry := range entries {
@@ -109,4 +109,12 @@ func ShouldFilterFailedJob(f resque.Filter, failed FailedJob) bool {
 		return true
 	}
 	return false
+}
+
+func (f FailedJob) Retry() error {
+	out, err := json.Marshal(f.Payload)
+	if err != nil {
+		return err
+	}
+	return resque.Retry(f.Queue, string(out))
 }

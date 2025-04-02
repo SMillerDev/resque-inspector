@@ -5,6 +5,7 @@ import (
 	"github.com/valkey-io/valkey-go"
 	"log"
 	"strings"
+	"time"
 )
 
 const Prefix = "resque:"
@@ -16,7 +17,7 @@ func GetList(key string) []string {
 	prepareClient()
 	ctx := context.Background()
 	key = ensurePrefix(key)
-	members, err := Client.Do(ctx, Client.B().Smembers().Key(key).Build()).AsStrSlice()
+	members, err := Client.DoCache(ctx, Client.B().Smembers().Key(key).Cache(), time.Minute).AsStrSlice()
 	if err != nil {
 		log.Default().Printf("Failed to get list for \"%s\": %s", key, err)
 		return make([]string, 0)
@@ -38,17 +39,20 @@ func GetEntryCount(key string) int64 {
 	return count
 }
 
-func GetEntries(key string) []string {
+func GetEntries(key string, start int64, limit int64) []string {
 	prepareClient()
 	ctx := context.Background()
 	key = ensurePrefix(key)
 
 	count := GetEntryCount(key)
-	if count <= 0 {
+	if count <= start {
 		return []string{}
 	}
+	if count <= limit {
+		limit = count
+	}
 
-	entries, err := Client.Do(ctx, Client.B().Lrange().Key(key).Start(0).Stop(count).Build()).AsStrSlice()
+	entries, err := Client.Do(ctx, Client.B().Lrange().Key(key).Start(start).Stop(count).Build()).AsStrSlice()
 	if err != nil {
 		log.Default().Printf("Failed to get entries for \"%s\": %s", key, err)
 		return []string{}
@@ -101,35 +105,19 @@ func getEntry(key string) (string, error) {
 	return item, err
 }
 
-/**
+func Clear(key string) error {
+	prepareClient()
+	ctx := context.Background()
+	key = ensurePrefix(key)
+	err := Client.Do(ctx, Client.B().Del().Key(key).Build()).Error()
 
-resque_failed_all_jobs() {
-  local failed_count
-
-  failed_count=$( resque_redis LLEN resque:failed )
-
-  resque_redis LRANGE resque:failed 0 "${failed_count}"
+	return err
 }
 
-resque_clear_queue() {
-  local queue="$1"
+func Retry(queue string, payload string) error {
+	prepareClient()
+	ctx := context.Background()
+	key := ensurePrefix(queue)
 
-  if [ -z "${queue}" ]; then
-    error "Missing queue argument to clear"
-  fi
-
-  local key result
-
-  if [ "${queue}" = 'failed' ]; then
-    key='resque:failed'
-  else
-    key="resque:queue:${queue}"
-  fi
-
-  result=$( resque_redis DEL "${key}" )
-
-  if [ "${result}" -eq 0 ]; then
-    return 1
-  fi
+	return Client.Do(ctx, Client.B().Rpush().Key(key).Element(payload).Build()).Error()
 }
-*/
