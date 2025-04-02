@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"resque-inspector/result"
+	"resque-inspector/resque"
 	"time"
 )
 
@@ -19,8 +19,8 @@ func returnError(w http.ResponseWriter, code int, data interface{}) {
 	_, _ = io.WriteString(w, string(jsonData))
 }
 
-func filterFromRequest(r *http.Request) result.Filter {
-	return result.Filter{
+func filterFromRequest(r *http.Request) resque.Filter {
+	return resque.Filter{
 		Regex:     r.URL.Query().Get("filter"),
 		Class:     "",
 		Exception: "",

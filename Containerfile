@@ -1,5 +1,5 @@
 # builder
-FROM ghcr.io/goreleaser/goreleaser:latest AS builder
+FROM goreleaser/goreleaser:latest AS builder
 
 WORKDIR /build
 

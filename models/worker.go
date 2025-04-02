@@ -3,7 +3,6 @@ package models
 import (
 	"encoding/json"
 	"resque-inspector/resque"
-	"resque-inspector/result"
 	"strings"
 )
 
@@ -15,12 +14,12 @@ type WorkerSlot struct {
 	Entry  Job    `json:"entry"`
 }
 
-func GetWorkerList(filter result.Filter) result.NamedResult[WorkerSlot] {
-	workers := resque.GetList("workers", true)
+func GetWorkerList(filter resque.Filter) resque.NamedResult[WorkerSlot] {
+	workers := resque.GetList("workers")
 	data := make(map[string][]WorkerSlot)
 	var filtered = 0
 	for _, worker := range workers {
-		if result.ShouldFilterString(filter, worker) {
+		if resque.ShouldFilterString(filter, worker) {
 			continue
 		}
 
@@ -35,16 +34,19 @@ func GetWorkerList(filter result.Filter) result.NamedResult[WorkerSlot] {
 			Socket: parts[1],
 		}
 		var job Job
-		err := json.Unmarshal([]byte(resque.GetEntry("worker:"+worker, true)), &job)
-		if err != nil {
-			continue
+		entry := resque.GetEntryOrNil("worker:" + worker)
+		if entry != "" {
+			err := json.Unmarshal([]byte(entry), &job)
+			if err != nil {
+				continue
+			}
+			structure.Entry = job
 		}
-		structure.Entry = job
 
 		data[parts[2]] = append(data[parts[2]], structure)
 	}
 
-	return result.NamedResult[WorkerSlot]{
+	return resque.NamedResult[WorkerSlot]{
 		Filter:   filter,
 		Total:    len(data),
 		Filtered: filtered,

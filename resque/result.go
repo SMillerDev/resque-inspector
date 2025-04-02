@@ -1,4 +1,4 @@
-package result
+package resque
 
 import (
 	"regexp"
@@ -9,8 +9,8 @@ type Result[T any] struct {
 	Filter     Filter   `json:"filter"`
 	Total      int      `json:"total"`
 	Filtered   int      `json:"filtered"`
-	Classes    []string `json:"classes,omitempty"`
-	Exceptions []string `json:"exceptions,omitempty"`
+	Classes    []string `json:"classes"`
+	Exceptions []string `json:"exceptions"`
 	Items      []T      `json:"items"`
 }
 

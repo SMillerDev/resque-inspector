@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/valkey-io/valkey-go"
 	"log"
+	"strings"
 )
 
 const Prefix = "resque:"
@@ -11,7 +12,68 @@ const Prefix = "resque:"
 var Client valkey.Client
 var Dsn string
 
-func PrepareClient() {
+func GetList(key string) []string {
+	prepareClient()
+	ctx := context.Background()
+	key = ensurePrefix(key)
+	members, err := Client.Do(ctx, Client.B().Smembers().Key(key).Build()).AsStrSlice()
+	if err != nil {
+		log.Default().Printf("Failed to get list for \"%s\": %s", key, err)
+		return make([]string, 0)
+	}
+
+	return members
+}
+
+func GetEntryCount(key string) int64 {
+	prepareClient()
+	ctx := context.Background()
+	key = ensurePrefix(key)
+	count, err := Client.Do(ctx, Client.B().Llen().Key(key).Build()).AsInt64()
+	if err != nil {
+		log.Default().Printf("Failed to get entry count for \"%s\": %s", key, err)
+		return -1
+	}
+
+	return count
+}
+
+func GetEntries(key string) []string {
+	prepareClient()
+	ctx := context.Background()
+	key = ensurePrefix(key)
+
+	count := GetEntryCount(key)
+	if count <= 0 {
+		return []string{}
+	}
+
+	entries, err := Client.Do(ctx, Client.B().Lrange().Key(key).Start(0).Stop(count).Build()).AsStrSlice()
+	if err != nil {
+		log.Default().Printf("Failed to get entries for \"%s\": %s", key, err)
+		return []string{}
+	}
+
+	return entries
+}
+
+func GetEntry(key string) string {
+	entry, err := getEntry(key)
+	if err != nil {
+		log.Default().Printf("Failed to get entry for \"%s\": %s", entry, err)
+		return ""
+	}
+
+	return entry
+}
+
+func GetEntryOrNil(key string) string {
+	entry, _ := getEntry(key)
+
+	return entry
+}
+
+func prepareClient() {
 	if Client != nil {
 		return
 	}
@@ -23,70 +85,20 @@ func PrepareClient() {
 	Client = preClient
 }
 
-func GetList(key string, shouldPrefix bool) []string {
-	PrepareClient()
-	ctx := context.Background()
-	if shouldPrefix {
-		key = Prefix + key
-	}
-	members, err := Client.Do(ctx, Client.B().Smembers().Key(key).Build()).AsStrSlice()
-	if err != nil {
-		log.Default().Printf("Failed to get list for \"%s\": %s", key, err)
-		return make([]string, 0)
+func ensurePrefix(key string) string {
+	if strings.HasPrefix(key, Prefix) {
+		return key
 	}
 
-	return members
+	return Prefix + key
 }
 
-func GetEntryCount(queue string, shouldPrefix bool) int64 {
-	PrepareClient()
+func getEntry(key string) (string, error) {
+	prepareClient()
 	ctx := context.Background()
-	if shouldPrefix {
-		queue = Prefix + queue
-	}
-	count, err := Client.Do(ctx, Client.B().Llen().Key(queue).Build()).AsInt64()
-	if err != nil {
-		log.Default().Printf("Failed to get entry count for \"%s\": %s", queue, err)
-		return -1
-	}
-
-	return count
-}
-
-func GetEntries(queue string, shouldPrefix bool) []string {
-	PrepareClient()
-	ctx := context.Background()
-	if shouldPrefix {
-		queue = Prefix + queue
-	}
-
-	count := GetEntryCount(queue, false)
-	if count <= 0 {
-		return []string{}
-	}
-
-	entries, err := Client.Do(ctx, Client.B().Lrange().Key(queue).Start(0).Stop(count).Build()).AsStrSlice()
-	if err != nil {
-		log.Default().Printf("Failed to get entries for \"%s\": %s", queue, err)
-		return []string{}
-	}
-
-	return entries
-}
-
-func GetEntry(entry string, shouldPrefix bool) string {
-	PrepareClient()
-	ctx := context.Background()
-	if shouldPrefix {
-		entry = Prefix + entry
-	}
-	item, err := Client.Do(ctx, Client.B().Get().Key(entry).Build()).ToString()
-	if err != nil {
-		log.Default().Printf("Failed to get entry for \"%s\": %s", entry, err)
-		return ""
-	}
-
-	return item
+	key = ensurePrefix(key)
+	item, err := Client.Do(ctx, Client.B().Get().Key(key).Build()).ToString()
+	return item, err
 }
 
 /**

@@ -2,7 +2,6 @@ package models
 
 import (
 	"resque-inspector/resque"
-	"resque-inspector/result"
 )
 
 type Queue struct {
@@ -12,18 +11,18 @@ type Queue struct {
 	Jobs     []Job  `json:"jobs"`
 }
 
-func GetQueueList(filter result.Filter) result.Result[Queue] {
-	queues := resque.GetList("queues", true)
+func GetQueueList(filter resque.Filter) resque.Result[Queue] {
+	queues := resque.GetList("queues")
 	var data []Queue
 	filtered := 0
 	for _, queue := range queues {
-		if result.ShouldFilterString(filter, queue) {
+		if resque.ShouldFilterString(filter, queue) {
 			continue
 		}
 		structure := Queue{
 			Id:       queue,
 			Name:     queue,
-			JobCount: resque.GetEntryCount("queue:"+queue, true),
+			JobCount: resque.GetEntryCount("queue:" + queue),
 			Jobs:     []Job{},
 		}
 
@@ -32,11 +31,11 @@ func GetQueueList(filter result.Filter) result.Result[Queue] {
 	data = append(data, Queue{
 		Id:       "failed",
 		Name:     "Failed",
-		JobCount: resque.GetEntryCount("failed", true),
+		JobCount: resque.GetEntryCount("failed"),
 		Jobs:     []Job{},
 	})
 
-	return result.Result[Queue]{
+	return resque.Result[Queue]{
 		Filter:   filter,
 		Total:    len(data),
 		Filtered: filtered,
@@ -48,7 +47,7 @@ func GetQueue(name string) Queue {
 	return Queue{
 		Id:       name,
 		Name:     name,
-		JobCount: resque.GetEntryCount(name, true),
+		JobCount: resque.GetEntryCount(name),
 		Jobs:     []Job{},
 	}
 }

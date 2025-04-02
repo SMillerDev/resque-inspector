@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"resque-inspector/resque"
-	"resque-inspector/result"
 	"time"
 )
 
@@ -37,18 +36,16 @@ func (f FailedJob) Stringify() string {
 	return fmt.Sprintf("error: %s\n\texception: %s\n\tqueue: %s\n", f.Error, f.Exception, f.Queue)
 }
 
-func (q Queue) GetJobList(filter result.Filter) result.Result[JobInterface] {
-	resque.PrepareClient()
-
+func (q Queue) GetJobList(filter resque.Filter) resque.Result[JobInterface] {
 	var entries []string
 	var classes = make([]string, 0)
 	var exceptions = make([]string, 0)
 	var data = make([]JobInterface, 0)
 
 	if q.Id == "failed" {
-		entries = resque.GetEntries(q.Id, true)
+		entries = resque.GetEntries(q.Id)
 	} else {
-		entries = resque.GetEntries("queue:"+q.Id, true)
+		entries = resque.GetEntries("queue:" + q.Id)
 	}
 
 	for _, entry := range entries {
@@ -73,12 +70,15 @@ func (q Queue) GetJobList(filter result.Filter) result.Result[JobInterface] {
 		if err != nil {
 			continue
 		}
+		if ShouldFilterJob(filter, job) {
+			continue
+		}
 
 		classes = append(classes, job.Class)
 		data = append(data, job)
 	}
 
-	return result.Result[JobInterface]{
+	return resque.Result[JobInterface]{
 		Filter:     filter,
 		Filtered:   filter.Filtered,
 		Total:      len(data),
@@ -88,7 +88,17 @@ func (q Queue) GetJobList(filter result.Filter) result.Result[JobInterface] {
 	}
 }
 
-func ShouldFilterFailedJob(f result.Filter, failed FailedJob) bool {
+func ShouldFilterJob(f resque.Filter, job Job) bool {
+	if f.Class == "" {
+		return false
+	}
+	if f.Class == job.Class {
+		return true
+	}
+	return false
+}
+
+func ShouldFilterFailedJob(f resque.Filter, failed FailedJob) bool {
 	if f.Class == "" && f.Exception == "" {
 		return false
 	}

@@ -1,0 +1,49 @@
+{{template "header" $}}
+<form method="get">
+    <div class="row">
+        <div class="col">
+            <select class="form-select" aria-label="Queue" id="queues" name="queue" onchange="loadJobs()">
+                {{range $queue := .queues}}
+                    <option value="{{$queue.Id}}">{{$queue.Name}}</option> {{end}}
+            </select>
+        </div>
+        <div class="col">
+            <select class="form-select" aria-label="Classes" id="classes" name="class" onchange="loadJobs()">
+                <option selected value=""> -- Select Class --</option>
+            </select>
+        </div>
+
+        <div class="col" id="exceptions-wrapper">
+            <select class="form-select" aria-label="Exceptions" id="exceptions" name="exception" onchange="loadJobs()">
+                <option selected value=""> -- Select Exception --</option>
+            </select>
+        </div>
+        <div class="col" id="regex-wrapper">
+            <input class="form-control" aria-label="Regex filter" id="regex" name="regex" placeholder=".*" onchange="loadJobs()" onkeyup="loadJobs()">
+        </div>
+    </div>
+</form>
+<table class="table" id="jobList">
+    <thead>
+    <tr>
+        <th scope="col">#</th>
+        <th scope="col">First</th>
+        <th scope="col">Last</th>
+        <th scope="col">Handle</th>
+    </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<div class="align-content-center" style="display: none;">
+    <nav aria-label="Pagination for job information">
+        <ul class="pagination justify-content-center">
+            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+        </ul>
+    </nav>
+</div>
+{{template "footer" $}}

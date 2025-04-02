@@ -1,20 +1,22 @@
 package server
 
 import (
-	_ "embed"
+	"embed"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"resque-inspector/models"
-	"resque-inspector/result"
+	"resque-inspector/resque"
 )
-
-var LayoutDir string = "server/template"
-var bootstrap *template.Template
 
 //go:embed `img/favicon.ico`
 var favicon string
 
+//go:embed `template`
+var LayoutFs embed.FS
+
+var bootstrap *template.Template
 var Dsn string
 
 func getUi(w http.ResponseWriter, r *http.Request) {
@@ -26,24 +28,22 @@ func getUi(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var err error
+	bootstrap, err = template.ParseFS(LayoutFs, "template/*.html")
+	if err != nil {
+		log.Default().Fatalf("failed to parse bootstrap template: %v", err)
+	}
+
 	var templateName string
 	switch page {
 	case "queues":
-		templateName = "queues.gohtml"
+		templateName = "queues.html"
 	case "workers":
-		templateName = "workers.gohtml"
+		templateName = "workers.html"
 	default:
-		templateName = "index.gohtml"
+		templateName = "index.html"
 	}
-
-	var err error
-	bootstrap, err = template.ParseGlob(LayoutDir + "/*.gohtml")
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	err = bootstrap.ExecuteTemplate(w, templateName, map[string]interface{}{"Dsn": Dsn, "Page": page, "queues": models.GetQueueList(result.Filter{}).Items})
+	err = bootstrap.ExecuteTemplate(w, templateName, map[string]interface{}{"Dsn": Dsn, "Page": page, "queues": models.GetQueueList(resque.Filter{}).Items})
 	if err != nil {
 		//w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))

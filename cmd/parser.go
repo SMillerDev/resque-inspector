@@ -29,7 +29,7 @@ const defaultRedisPort = 6379
 const defaultRedisHost = "127.0.0.1"
 const defaultFilter = ".*"
 
-func ParseCommandLine() {
+func ParseCommandLine(version string, date string) {
 	subcommands := setupSubCommands()
 	if len(flag.Args()) < 1 {
 		log.Default().Fatal("expected a subcommands, got none!")
@@ -37,7 +37,6 @@ func ParseCommandLine() {
 
 	subcommand := subcommands[os.Args[1]]
 	if subcommand == nil {
-		log.Default().Printf("expected one of these subcommands, got \"%s\"\n", flag.Arg(0))
 		for _, subcommand := range subcommands {
 			fmt.Printf("%s\n", subcommand.Name())
 		}
@@ -72,6 +71,8 @@ func ParseCommandLine() {
 		log.Default().Println("subcommand 'retry'")
 	case "serve":
 		server.Serve()
+	case "version":
+		fmt.Printf("resque-inspector %s, built at %s", version, date)
 	default:
 		log.Default().Printf("expected one of %v subcommands\n", maps.Keys(subcommands))
 	}
@@ -110,7 +111,7 @@ func setupSubCommands() map[string]*flag.FlagSet {
 	readSubcommands := []string{"queues", "jobs", "workers"}
 	deleteSubcommands := []string{"clear"}
 	writeSubcommands := []string{"retry"}
-	utilSubcommands := []string{"serve"}
+	utilSubcommands := []string{"serve", "version"}
 	allSubCommands := slices.Concat(readSubcommands, deleteSubcommands, writeSubcommands, utilSubcommands)
 
 	subcommands := map[string]*flag.FlagSet{}

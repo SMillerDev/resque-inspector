@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"resque-inspector/models"
-	"resque-inspector/result"
+	"resque-inspector/resque"
 )
 
 func PrintJsonResult(data interface{}) {
@@ -23,12 +23,12 @@ func PrintJsonResult(data interface{}) {
 	os.Exit(0)
 }
 
-func PrintJobCmdResult(data result.Result[models.JobInterface]) {
+func PrintJobCmdResult(data resque.Result[models.JobInterface]) {
 	for _, val := range data.Items {
 		println(val.Stringify())
 	}
 }
 
-func filterFromCmdline() result.Filter {
-	return result.Filter{}
+func filterFromCmdline() resque.Filter {
+	return resque.Filter{}
 }
