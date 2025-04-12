@@ -45,7 +45,7 @@ jobs:
         uses: docker/build-push-action@66147ca503440c95dd9a97e9047c11af18d5cfeb
         with:
           context: .
-          file: Containerfile
+          file: ${{ startsWith(github.ref, 'refs/tags/v') && 'Containerfile.prod' || 'Containerfile' }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}

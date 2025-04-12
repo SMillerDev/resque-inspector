@@ -5,7 +5,7 @@ WORKDIR /build
 
 COPY . .
 
-RUN goreleaser build --single-target --snapshot --clean
+RUN goreleaser build --single-target --clean
 
 # Create a production stage to run the application binary
 FROM scratch AS production
