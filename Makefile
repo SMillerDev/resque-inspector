@@ -2,7 +2,7 @@ name := resque-inspector
 file := resque-inspector
 
 build:
-	goreleaser build --auto-snapshot --clean
+	goreleaser build --snapshot --clean
 
 build-mac:
 	GOOS=darwin goreleaser build --snapshot --clean --single-target
