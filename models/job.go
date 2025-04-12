@@ -82,7 +82,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 	return resque.Result[JobInterface]{
 		Filter:     filter,
 		Filtered:   filter.Filtered,
-		Total:      int(q.JobCount),
+		Total:      q.JobCount,
 		Selected:   len(data),
 		Classes:    classes,
 		Exceptions: exceptions,

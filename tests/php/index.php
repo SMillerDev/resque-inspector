@@ -8,8 +8,12 @@ Resque::setBackend("localhost:{$port}");
 $args = array(
           'name' => 'Chris'
         );
-$val = Resque::enqueue('default', 'My_Job', $args);
-var_dump($val);
+
+for ($x = 0; $x <= 30; $x++) {
+  $num = $x % 5;
+  $val = Resque::enqueue('default', "My_Job$num", $args);
+}
+
 
 var_dump(Resque::queues());
 ?>

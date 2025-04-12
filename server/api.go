@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,7 +10,11 @@ import (
 )
 
 func getRootApi(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got %s API request\n", r.RequestURI)
+	log.Default().Printf("[API] %s %s request\n", r.Method, r.RequestURI)
+	if r.Method != "GET" {
+		returnError(w, http.StatusMethodNotAllowed, map[string]interface{}{})
+		return
+	}
 	typeVal := r.PathValue("type")
 
 	var jsonData []byte
@@ -45,6 +48,10 @@ func getRootApi(w http.ResponseWriter, r *http.Request) {
 }
 
 func getJobsApi(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		returnError(w, http.StatusMethodNotAllowed, map[string]interface{}{})
+		return
+	}
 	queueVal := r.PathValue("queue")
 	if queueVal == "" {
 		log.Default().Printf("received unknown API request: %s\n", r.RequestURI)
@@ -107,6 +114,5 @@ func clearApi(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = io.WriteString(w, string("{}"))
+	w.WriteHeader(http.StatusNoContent)
 }

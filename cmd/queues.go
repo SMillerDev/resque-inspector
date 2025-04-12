@@ -14,3 +14,11 @@ func getAllQueuesCmd() {
 		fmt.Printf("\t%s: %d items\n", queue.Name, queue.JobCount)
 	}
 }
+
+func clearQueueCmd(queue string) {
+	err := models.GetQueue(queue).Clear()
+	if err != nil {
+		fmt.Printf("Error clearing queue: %s\n", err)
+	}
+	fmt.Printf("Cleared queue: %s\n", queue)
+}

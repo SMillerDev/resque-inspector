@@ -78,7 +78,7 @@
                 }
                 let html = "";
                 json["items"].forEach(item => {
-                    html += `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <a href="#" class="btn btn-danger">Clear</a></td></tr>`
+                    html += `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('${item["id"]}')" class="btn btn-danger">Clear</button></td></tr>`
                 });
                 let table = document.getElementById("queueList");
                 table.innerHTML = `<thead><tr><th scope="col">Queue</th><th scope="col">Items</th><th scope="col"></th></tr></thead><tbody>${html}</tbody>`;
@@ -123,6 +123,19 @@
             }
 
             return str.join("&");
+        }
+
+        function clearQueue(queue) {
+            clearQueueRequest(queue)
+            loadQueues()
+        }
+
+        async function clearQueueRequest(queue) {
+            const url = `/api/v1/queues/${queue}`;
+            const response = await fetch(url, { method: "DELETE" });
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
         }
 
         async function getApi(path, filter, start = 0, offset = 25) {

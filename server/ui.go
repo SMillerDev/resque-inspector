@@ -2,7 +2,6 @@ package server
 
 import (
 	"embed"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -20,7 +19,7 @@ var bootstrap *template.Template
 var Dsn string
 
 func getUi(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got %s UI request\n", r.RequestURI)
+	log.Default().Printf("[Web] %s request\n", r.RequestURI)
 	page := r.PathValue("page")
 	if page == "favicon.ico" {
 		w.Header().Set("Content-Type", "img/ico")

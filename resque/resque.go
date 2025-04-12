@@ -20,7 +20,7 @@ func GetList(key string) []string {
 	ctx := context.Background()
 	key = ensurePrefix(key)
 	if Debug {
-		log.Printf("GetList \"%s\"", key)
+		log.Printf("[Resque] GetList \"%s\"", key)
 	}
 	members, err := Client.DoCache(ctx, Client.B().Smembers().Key(key).Cache(), time.Minute).AsStrSlice()
 	if err != nil {
@@ -42,7 +42,7 @@ func GetEntryCount(key string) int64 {
 	}
 
 	if Debug {
-		log.Printf("GetEntryCount \"%s\": %d", key, count)
+		log.Printf("[Resque] GetEntryCount \"%s\": %d", key, count)
 	}
 
 	return count
@@ -62,7 +62,7 @@ func GetEntries(key string, start int64, limit int64) []string {
 	}
 
 	if Debug {
-		log.Printf("GetEntries \"%s\": %d until %d out of %d", key, start, limit, count)
+		log.Printf("[Resque] GetEntries \"%s\": %d until %d out of %d", key, start, limit, count)
 	}
 	entries, err := Client.Do(ctx, Client.B().Lrange().Key(key).Start(start).Stop(limit).Build()).AsStrSlice()
 	if err != nil {
@@ -115,7 +115,7 @@ func getEntry(key string) (string, error) {
 	key = ensurePrefix(key)
 
 	if Debug {
-		log.Println("GetEntry", key)
+		log.Println("[Resque] GetEntry", key)
 	}
 
 	item, err := Client.Do(ctx, Client.B().Get().Key(key).Build()).ToString()
@@ -128,7 +128,7 @@ func Clear(key string) error {
 	key = ensurePrefix(key)
 
 	if Debug {
-		log.Println("Clear", key)
+		log.Println("[Resque] Clear", key)
 	}
 
 	err := Client.Do(ctx, Client.B().Del().Key(key).Build()).Error()
@@ -142,10 +142,10 @@ func Delete(queue string, payload string) error {
 	key := ensurePrefix(queue)
 
 	if Debug {
-		log.Println("Retry", key)
+		log.Println("[Resque] Delete", key)
 	}
 
-	return Client.Do(ctx, Client.B().Lrem().Key(key).Count(0).Element(payload).Build()).Error()
+	return Client.Do(ctx, Client.B().Lrem().Key(key).Count(1).Element(payload).Build()).Error()
 }
 
 func Retry(queue string, payload string) error {
@@ -154,7 +154,7 @@ func Retry(queue string, payload string) error {
 	key := ensurePrefix(queue)
 
 	if Debug {
-		log.Println("Retry", key)
+		log.Println("[Resque] Retry", key)
 	}
 
 	return Client.Do(ctx, Client.B().Rpush().Key(key).Element(payload).Build()).Error()

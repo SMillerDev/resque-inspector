@@ -64,13 +64,16 @@ func ParseCommandLine(version string, date string) {
 		getAllWorkersCmd()
 	case "jobs":
 		if len(subcommand.Args()) == 0 {
-			println("expected queue Name to fetch jobs for, got none")
-			os.Exit(1)
+			log.Default().Fatal("expected queue name to fetch jobs for, got none")
 		}
 
 		getAllJobsCmd(subcommand.Arg(0))
 	case "clear":
-		fmt.Println("subcommand 'clear'")
+		if len(subcommand.Args()) == 0 {
+			log.Default().Fatal("expected queue to clear, got none")
+		}
+
+		clearQueueCmd(subcommand.Arg(0))
 	case "retry":
 		log.Default().Println("subcommand 'retry'")
 	case "serve":

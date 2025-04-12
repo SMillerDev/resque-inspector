@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"github.com/NYTimes/gziphandler"
 	"io"
 	"log"
 	"net/http"
@@ -35,13 +36,13 @@ func filterFromRequest(r *http.Request) resque.Filter {
 }
 
 func Serve() {
-	http.HandleFunc("/{page}", getUi)
-	http.HandleFunc("/", getUi)
+	http.Handle("/{page}", gziphandler.GzipHandler(http.HandlerFunc(getUi)))
+	http.Handle("/", gziphandler.GzipHandler(http.HandlerFunc(getUi)))
 
-	http.HandleFunc("/api/v1/{type}", getRootApi)
-	http.HandleFunc("/api/v1/queues/{queue}/jobs", getJobsApi)
-	http.HandleFunc("/api/v1/queues/{queue}/jobs/{id}", retryJobApi)
-	http.HandleFunc("/api/v1/queues/{queue}", clearApi)
+	http.Handle("/api/v1/{type}", gziphandler.GzipHandler(http.HandlerFunc(getRootApi)))
+	http.Handle("/api/v1/queues/{queue}/jobs", gziphandler.GzipHandler(http.HandlerFunc(getJobsApi)))
+	http.Handle("/api/v1/queues/{queue}/jobs/{id}", gziphandler.GzipHandler(http.HandlerFunc(retryJobApi)))
+	http.Handle("/api/v1/queues/{queue}", gziphandler.GzipHandler(http.HandlerFunc(retryJobApi)))
 
 	err := http.ListenAndServe(httpAddr, nil)
 	if errors.Is(err, http.ErrServerClosed) {
