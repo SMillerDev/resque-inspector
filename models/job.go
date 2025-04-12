@@ -82,7 +82,8 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 	return resque.Result[JobInterface]{
 		Filter:     filter,
 		Filtered:   filter.Filtered,
-		Total:      len(data),
+		Total:      int(q.JobCount),
+		Selected:   len(data),
 		Classes:    classes,
 		Exceptions: exceptions,
 		Items:      data,
@@ -94,6 +95,7 @@ func ShouldFilterJob(f resque.Filter, job Job) bool {
 		if Debug {
 			log.Default().Println("Filter job class does not match.")
 		}
+		f.Filtered++
 
 		return true
 	}
@@ -106,12 +108,14 @@ func ShouldFilterFailedJob(f resque.Filter, failed FailedJob) bool {
 		if Debug {
 			log.Default().Println("Filter job class does not match.")
 		}
+		f.Filtered++
 		return true
 	}
 	if f.Exception != "" && f.Exception != failed.Exception {
 		if Debug {
 			log.Default().Println("Filter job exception does not match.")
 		}
+		f.Filtered++
 		return true
 	}
 

@@ -17,7 +17,6 @@ type WorkerSlot struct {
 func GetWorkerList(filter resque.Filter) resque.NamedResult[WorkerSlot] {
 	workers := resque.GetList("workers")
 	data := make(map[string][]WorkerSlot)
-	var filtered = 0
 	for _, worker := range workers {
 		if resque.ShouldFilterString(filter, worker) {
 			continue
@@ -49,7 +48,7 @@ func GetWorkerList(filter resque.Filter) resque.NamedResult[WorkerSlot] {
 	return resque.NamedResult[WorkerSlot]{
 		Filter:   filter,
 		Total:    len(data),
-		Filtered: filtered,
+		Filtered: filter.Filtered,
 		Items:    data,
 	}
 }

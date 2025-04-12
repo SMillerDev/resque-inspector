@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"resque-inspector/models"
@@ -24,6 +25,7 @@ func PrintJsonResult(data interface{}) {
 }
 
 func PrintJobCmdResult(data resque.Result[models.JobInterface]) {
+	fmt.Printf("Printing %d out of %d jobs\n", data.Selected, data.Total)
 	for _, val := range data.Items {
 		println(val.Stringify())
 	}

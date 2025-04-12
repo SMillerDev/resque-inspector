@@ -8,6 +8,7 @@ import (
 type Result[T any] struct {
 	Filter     Filter   `json:"filter"`
 	Total      int      `json:"total"`
+	Selected   int      `json:"selected"`
 	Filtered   int      `json:"filtered"`
 	Classes    []string `json:"classes"`
 	Exceptions []string `json:"exceptions"`
@@ -33,6 +34,7 @@ type Filter struct {
 
 func ShouldFilterString(f Filter, queue string) bool {
 	if f.Regex == "" {
+		f.Filtered++
 		return false
 	}
 	matches, _ := regexp.MatchString(f.Regex, queue)
