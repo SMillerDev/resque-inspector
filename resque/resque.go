@@ -13,10 +13,15 @@ const Prefix = "resque:"
 var Client valkey.Client
 var Dsn string
 
+var Debug bool
+
 func GetList(key string) []string {
 	prepareClient()
 	ctx := context.Background()
 	key = ensurePrefix(key)
+	if Debug {
+		log.Printf("GetList \"%s\"", key)
+	}
 	members, err := Client.DoCache(ctx, Client.B().Smembers().Key(key).Cache(), time.Minute).AsStrSlice()
 	if err != nil {
 		log.Default().Printf("Failed to get list for \"%s\": %s", key, err)
@@ -30,10 +35,14 @@ func GetEntryCount(key string) int64 {
 	prepareClient()
 	ctx := context.Background()
 	key = ensurePrefix(key)
-	count, err := Client.Do(ctx, Client.B().Llen().Key(key).Build()).AsInt64()
+	count, err := Client.DoCache(ctx, Client.B().Llen().Key(key).Cache(), time.Second*5).AsInt64()
 	if err != nil {
 		log.Default().Printf("Failed to get entry count for \"%s\": %s", key, err)
 		return -1
+	}
+
+	if Debug {
+		log.Printf("GetEntryCount \"%s\": %d", key, count)
 	}
 
 	return count
@@ -45,14 +54,17 @@ func GetEntries(key string, start int64, limit int64) []string {
 	key = ensurePrefix(key)
 
 	count := GetEntryCount(key)
-	if count <= start {
+	if count < start {
 		return []string{}
 	}
 	if count <= limit {
 		limit = count
 	}
 
-	entries, err := Client.Do(ctx, Client.B().Lrange().Key(key).Start(start).Stop(count).Build()).AsStrSlice()
+	if Debug {
+		log.Printf("GetEntries \"%s\": %d until %d out of %d", key, start, limit, count)
+	}
+	entries, err := Client.Do(ctx, Client.B().Lrange().Key(key).Start(start).Stop(limit).Build()).AsStrSlice()
 	if err != nil {
 		log.Default().Printf("Failed to get entries for \"%s\": %s", key, err)
 		return []string{}
@@ -101,6 +113,11 @@ func getEntry(key string) (string, error) {
 	prepareClient()
 	ctx := context.Background()
 	key = ensurePrefix(key)
+
+	if Debug {
+		log.Println("GetEntry", key)
+	}
+
 	item, err := Client.Do(ctx, Client.B().Get().Key(key).Build()).ToString()
 	return item, err
 }
@@ -109,15 +126,36 @@ func Clear(key string) error {
 	prepareClient()
 	ctx := context.Background()
 	key = ensurePrefix(key)
+
+	if Debug {
+		log.Println("Clear", key)
+	}
+
 	err := Client.Do(ctx, Client.B().Del().Key(key).Build()).Error()
 
 	return err
+}
+
+func Delete(queue string, payload string) error {
+	prepareClient()
+	ctx := context.Background()
+	key := ensurePrefix(queue)
+
+	if Debug {
+		log.Println("Retry", key)
+	}
+
+	return Client.Do(ctx, Client.B().Lrem().Key(key).Count(0).Element(payload).Build()).Error()
 }
 
 func Retry(queue string, payload string) error {
 	prepareClient()
 	ctx := context.Background()
 	key := ensurePrefix(queue)
+
+	if Debug {
+		log.Println("Retry", key)
+	}
 
 	return Client.Do(ctx, Client.B().Rpush().Key(key).Element(payload).Build()).Error()
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"maps"
 	"os"
+	"resque-inspector/models"
 	"resque-inspector/resque"
 	"resque-inspector/server"
 	"slices"
@@ -17,6 +18,8 @@ var Filter string
 var jsonOut bool
 var subJsonOut bool
 var baseJsonOut bool
+var baseDebug bool
+var subDebug bool
 
 var subDsnFlag string
 var baseDsnFlag string
@@ -46,12 +49,13 @@ func ParseCommandLine(version string, date string) {
 
 	err := subcommand.Parse(os.Args[2:])
 	if err != nil {
-		log.Default().Printf("Failed to parse command %w\n", err)
+		log.Default().Printf("Failed to parse command %s\n", err)
 		os.Exit(1)
 	}
 
 	setupDsn()
 	setupJson()
+	setupDebug()
 
 	switch os.Args[1] {
 	case "queues":
@@ -84,6 +88,10 @@ func ParseCommandLine(version string, date string) {
 
 func setupJson() {
 	jsonOut = baseJsonOut || subJsonOut
+}
+func setupDebug() {
+	resque.Debug = baseDebug || subDebug
+	models.Debug = baseDebug || subDebug
 }
 func setupDsn() {
 	var dsn string
@@ -127,6 +135,7 @@ func setupSubCommands() map[string]*flag.FlagSet {
 
 	flag.StringVar(&baseDsnFlag, "dsn", "", "DSN to connect to, will override the hostname and port")
 	flag.BoolVar(&baseJsonOut, "json", false, "Output content in JSON format")
+	flag.BoolVar(&baseDebug, "debug", false, "Print debug output")
 
 	flag.Parse()
 
@@ -136,6 +145,7 @@ func setupSubCommands() map[string]*flag.FlagSet {
 
 		set.StringVar(&subDsnFlag, "dsn", "", "DSN to connect to, will override the hostname and port")
 		set.BoolVar(&subJsonOut, "json", false, "Output content in JSON format")
+		set.BoolVar(&subDebug, "debug", false, "Print debug output")
 	}
 
 	return subcommands
