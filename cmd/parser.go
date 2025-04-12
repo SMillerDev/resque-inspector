@@ -75,7 +75,7 @@ func ParseCommandLine(version string, date string) {
 
 		clearQueueCmd(subcommand.Arg(0))
 	case "retry":
-		log.Default().Println("subcommand 'retry'")
+		log.Default().Println("subcommand 'retry' is not yet implemented!")
 	case "serve":
 		server.Serve()
 	case "version":

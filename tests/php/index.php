@@ -1,19 +1,16 @@
 <?php
 require_once 'vendor/autoload.php';
 
-$port = getenv('REDIS_PORT') ?? '6379';
+$host = getenv('REDIS_HOST') ? getenv('REDIS_HOST') : 'localhost';
+$port = getenv('REDIS_PORT') ? getenv('REDIS_PORT') : '6379';
 
-Resque::setBackend("localhost:{$port}");
-
-$args = array(
-          'name' => 'Chris'
-        );
+$dsn = "redis://${host}:{$port}";
+echo "Connecting to $dsn";
+Resque::setBackend($dsn);
 
 for ($x = 0; $x <= 30; $x++) {
   $num = $x % 5;
-  $val = Resque::enqueue('default', "My_Job$num", $args);
+  Resque::enqueue('default', "My_Job$num", ['name' => 'Test', 'val' => $x]);
 }
 
-
-var_dump(Resque::queues());
 ?>

@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.2.2
+
+    - name: Set up Go
+      uses: actions/setup-go@v5.4.0
+      with:
+        go-version: '1.24'
+
+    - run: go install github.com/goreleaser/goreleaser/v2@latest
+
+    - name: Build
+      run: make build
+
+    - uses: actions/upload-artifact@v4.6.2
+      with:
+        name: dist
+        path: dist
+
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      valkey:
+        image: valkey/valkey:latest
+        ports:
+          # Opens tcp port 6379 on the host and service container
+          - 6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - run: |
+          echo "REDIS_HOST=127.0.0.1" >> "$GITHUB_ENV"
+          echo "REDIS_PORT=${{ job.services.valkey.ports['6379'] }}" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/download-artifact@v4.2.1
+        with:
+          name: dist
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: Setup test
+        working-directory: tests/php
+        run: |
+          composer install
+          php ./index.php
+
+      - name: Make binary executable
+        run: chmod +x ./dist/resque-inspector_linux_amd64_v1/resque-inspector
+
+      - name: check queues
+        run: ./dist/resque-inspector_linux_amd64_v1/resque-inspector queues
+
+      - name: check workers
+        run: ./dist/resque-inspector_linux_amd64_v1/resque-inspector workers
+
+      - name: check failed jobs
+        run: ./dist/resque-inspector_linux_amd64_v1/resque-inspector jobs failed
+
+      - name: check queued jobs in default
+        run: ./dist/resque-inspector_linux_amd64_v1/resque-inspector jobs default
+
+      - name: check clear queued jobs in default
+        run: ./dist/resque-inspector_linux_amd64_v1/resque-inspector clear default
+
+      - name: check queues after clear
+        run: ./dist/resque-inspector_linux_amd64_v1/resque-inspector queues
