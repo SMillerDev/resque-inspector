@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"resque-inspector/resque"
 	"time"
 )
@@ -89,25 +90,31 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 }
 
 func ShouldFilterJob(f resque.Filter, job Job) bool {
-	if f.Class == "" {
-		return false
-	}
-	if f.Class == job.Class {
+	if f.Class != "" && f.Class != job.Class {
+		if Debug {
+			log.Default().Println("Filter job class does not match.")
+		}
+
 		return true
 	}
+
 	return false
 }
 
 func ShouldFilterFailedJob(f resque.Filter, failed FailedJob) bool {
-	if f.Class == "" && f.Exception == "" {
-		return false
-	}
-	if f.Class == failed.Payload.Class {
+	if f.Class != "" && f.Class != failed.Payload.Class {
+		if Debug {
+			log.Default().Println("Filter job class does not match.")
+		}
 		return true
 	}
-	if f.Exception == failed.Exception {
+	if f.Exception != "" && f.Exception != failed.Exception {
+		if Debug {
+			log.Default().Println("Filter job exception does not match.")
+		}
 		return true
 	}
+
 	return false
 }
 

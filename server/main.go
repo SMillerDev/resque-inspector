@@ -24,7 +24,7 @@ func filterFromRequest(r *http.Request) resque.Filter {
 	start, _ := strconv.Atoi(r.URL.Query().Get("startDate"))
 	end, _ := strconv.Atoi(r.URL.Query().Get("endDate"))
 	return resque.Filter{
-		Regex:     r.URL.Query().Get("filter"),
+		Regex:     r.URL.Query().Get("regex"),
 		Class:     r.URL.Query().Get("class"),
 		Exception: r.URL.Query().Get("exception"),
 		Queue:     r.URL.Query().Get("queue"),

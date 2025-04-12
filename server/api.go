@@ -52,12 +52,12 @@ func getJobsApi(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	start := 0
-	if r.URL.Query().Has("startDate") {
-		start, _ = strconv.Atoi(r.URL.Query().Get("startDate"))
+	if r.URL.Query().Has("start") {
+		start, _ = strconv.Atoi(r.URL.Query().Get("start"))
 	}
 	end := 100
-	if r.URL.Query().Has("endDate") {
-		end, _ = strconv.Atoi(r.URL.Query().Get("startDate"))
+	if r.URL.Query().Has("offset") {
+		end, _ = strconv.Atoi(r.URL.Query().Get("offset"))
 	}
 
 	result := models.GetQueue(queueVal).GetJobList(filterFromRequest(r), int64(start), int64(end))

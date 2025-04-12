@@ -47,7 +47,7 @@ func GetQueue(name string) Queue {
 	return Queue{
 		Id:       name,
 		Name:     name,
-		JobCount: resque.GetEntryCount(name),
+		JobCount: resque.GetEntryCount("queue:" + name),
 		Jobs:     []Job{},
 	}
 }

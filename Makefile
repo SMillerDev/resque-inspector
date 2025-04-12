@@ -5,7 +5,7 @@ build:
 	goreleaser build --auto-snapshot --clean
 
 build-mac:
-	GOOS=darwin goreleaser build --auto-snapshot --clean --single-target
+	GOOS=darwin goreleaser build --snapshot --clean --single-target
 
 build-linux:
-	GOOS=linux goreleaser build --auto-snapshot --clean --single-target
+	GOOS=linux goreleaser build --snapshot --clean --single-target
