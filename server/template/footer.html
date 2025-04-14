@@ -1,6 +1,10 @@
 {{define "footer"}}
-    <span class="float-end">Connected to <code>{{$.Dsn}}</code></span>
+<span class="float-end">
+    Connected to <code>{{$.dsn}}</code>
+    {{ if eq .page "jobs" }}, loading <select id="pageSize" class="form-select-sm"><option>25</option><option>50</option></select> items {{ end }}
+</span>
     </div>
+    <script src="/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
@@ -21,24 +25,6 @@
                     break;
             }
         }
-        function generateFilter() {
-            let queue = document.getElementById("queues").value;
-            let regex = document.getElementById("regex").value;
-            let className = document.getElementById("classes").value;
-            let exception = "";
-            if (!document.getElementById("exceptions-wrapper").classList.contains("d-none")) {
-                exception = document.getElementById("exceptions").value;
-            }
-
-            return {
-                regex: regex,
-                class: className,
-                exception: exception,
-                queue: queue,
-                startDate: 0,
-                endDate: Date.now(),
-            }
-        }
 
         function loadJobs() {
             const filter = generateFilter();
@@ -54,7 +40,7 @@
                 let classes = json["classes"].filter(onlyUnique);
                 let classHtml = `<option ${filter.class ? '' : 'selected'} value="">-- Select class --</option>`;
                 classes.forEach(className => {
-                    classHtml += `<option value='${className}' ${(filter.class == className) ? 'selected' : ''}>${className}</option>`;
+                    classHtml += `<option value='${className}' ${(filter.class === className) ? 'selected' : ''}>${className}</option>`;
                 });
                 document.getElementById("classes").innerHTML = classHtml;
 
@@ -98,7 +84,7 @@
                 for (const key in json["items"]) {
                     const list = json["items"][key];
                     list.forEach(item => {
-                        if (item["entry"]["class"] == "") {
+                        if (item["entry"]["class"] === "") {
                             html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td></td></tr>`;
                             return;
                         }
@@ -114,42 +100,9 @@
             });
         }
 
-        function query(obj) {
-            let str = [];
-            for (const p in obj) {
-                if (obj.hasOwnProperty(p) && obj[p] != undefined) {
-                    str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-                }
-            }
-
-            return str.join("&");
-        }
-
         function clearQueue(queue) {
-            clearQueueRequest(queue)
-            loadQueues()
-        }
-
-        async function clearQueueRequest(queue) {
-            const url = `/api/v1/queues/${queue}`;
-            const response = await fetch(url, { method: "DELETE" });
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-        }
-
-        async function getApi(path, filter, start = 0, offset = 25) {
-            const url = `/api/v1/${path}?${query(filter)}&start=${start}&offset=${offset}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-
-            return await response.json()
-        }
-
-        function onlyUnique(value, index, array) {
-            return array.indexOf(value) === index;
+            clearQueueRequest(queue);
+            loadQueues();
         }
     </script>
     </body>

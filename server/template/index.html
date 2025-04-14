@@ -3,8 +3,8 @@
     <div class="row">
         <div class="col">
             <select class="form-select" aria-label="Queue" id="queues" name="queue" onchange="loadJobs()">
-                {{range $queue := .queues}}
-                    <option value="{{$queue.Id}}">{{$queue.Name}}</option> {{end}}
+                {{range .queues}}
+                    <option value="{{.Id}}" {{ if eq .Id $.selected }}selected{{ end }}>{{.Name}}</option> {{end}}
             </select>
         </div>
         <div class="col">

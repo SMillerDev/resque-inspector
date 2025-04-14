@@ -31,7 +31,6 @@ func filterFromRequest(r *http.Request) resque.Filter {
 		Queue:     r.URL.Query().Get("queue"),
 		StartDate: time.UnixMilli(int64(start)),
 		EndDate:   time.UnixMilli(int64(end)),
-		Filtered:  0,
 	}
 }
 

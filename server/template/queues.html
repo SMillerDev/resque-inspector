@@ -8,11 +8,11 @@
     </tr>
     </thead>
     <tbody>
-    {{range $queue := .queues}}
+    {{range .queues}}
         <tr>
-            <td>{{$queue.Name}}</td>
-            <td>{{$queue.JobCount}}</td>
-            <td><a href="/?queue={{$queue.Id}}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('{{$queue.Id}}')" class="btn btn-danger">Clear</button>
+            <td>{{.Name}}</td>
+            <td>{{.JobCount}}</td>
+            <td><a href="/?queue={{.Id}}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('{{.Id}}')" class="btn btn-danger">Clear</button>
             </td>
         </tr>
     {{end}}

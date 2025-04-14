@@ -29,12 +29,10 @@ type Filter struct {
 	Queue     string
 	StartDate time.Time
 	EndDate   time.Time
-	Filtered  int
 }
 
 func ShouldFilterString(f Filter, queue string) bool {
 	if f.Regex == "" {
-		f.Filtered++
 		return false
 	}
 	matches, _ := regexp.MatchString(f.Regex, queue)

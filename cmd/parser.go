@@ -13,25 +13,6 @@ import (
 	"strconv"
 )
 
-var Filter string
-
-var jsonOut bool
-var subJsonOut bool
-var baseJsonOut bool
-var baseDebug bool
-var subDebug bool
-
-var subDsnFlag string
-var baseDsnFlag string
-var subHost string
-var baseHost string
-var subPort int
-var basePort int
-
-const defaultRedisPort = 6379
-const defaultRedisHost = "127.0.0.1"
-const defaultFilter = ".*"
-
 func ParseCommandLine(version string, date string) {
 	subcommands := setupSubCommands()
 	if len(flag.Args()) < 1 {
@@ -40,9 +21,6 @@ func ParseCommandLine(version string, date string) {
 
 	subcommand := subcommands[os.Args[1]]
 	if subcommand == nil {
-		for _, subcommand := range subcommands {
-			fmt.Printf("%s\n", subcommand.Name())
-		}
 		flag.Usage()
 		os.Exit(1)
 	}

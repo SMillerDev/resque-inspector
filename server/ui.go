@@ -12,6 +12,9 @@ import (
 //go:embed `img/favicon.ico`
 var favicon string
 
+//go:embed `template/main.js`
+var js string
+
 //go:embed `template`
 var LayoutFs embed.FS
 
@@ -21,14 +24,23 @@ var Dsn string
 func getUi(w http.ResponseWriter, r *http.Request) {
 	log.Default().Printf("[Web] %s request\n", r.RequestURI)
 	page := r.PathValue("page")
-	if page == "favicon.ico" {
+	var err error
+	switch r.RequestURI {
+	case "/favicon.ico":
 		w.Header().Set("Content-Type", "img/ico")
-		w.Write([]byte(favicon))
+		_, err = w.Write([]byte(favicon))
+		w.WriteHeader(200)
+		return
+	case "/js/main.js":
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		_, err = w.Write([]byte(js))
+		w.WriteHeader(200)
+		return
+	default:
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		bootstrap, err = template.ParseFS(LayoutFs, "template/*.html")
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	var err error
-	bootstrap, err = template.ParseFS(LayoutFs, "template/*.html")
 	if err != nil {
 		log.Default().Fatalf("failed to parse bootstrap template: %v", err)
 	}
@@ -42,9 +54,30 @@ func getUi(w http.ResponseWriter, r *http.Request) {
 	default:
 		templateName = "index.html"
 	}
-	err = bootstrap.ExecuteTemplate(w, templateName, map[string]interface{}{"Dsn": Dsn, "Page": page, "queues": models.GetQueueList(resque.Filter{}).Items})
+
+	selected := r.URL.Query().Get("queue")
+	err = bootstrap.ExecuteTemplate(w, templateName, getDataSet(page, selected))
 	if err != nil {
 		//w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
+}
+
+func getDataSet(page string, selectedQueue string) map[string]interface{} {
+	var data = make(map[string]interface{})
+	if page == "queues" || page == "workers" {
+		data["page"] = page
+	} else {
+		data["page"] = "jobs"
+	}
+
+	data["dsn"] = Dsn
+	data["queues"] = models.GetQueueList(resque.Filter{}).Items
+	if selectedQueue == "" {
+		data["selected"] = "NONE"
+	} else {
+		data["selected"] = selectedQueue
+	}
+
+	return data
 }

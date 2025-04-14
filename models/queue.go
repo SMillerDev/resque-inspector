@@ -14,8 +14,10 @@ type Queue struct {
 func GetQueueList(filter resque.Filter) resque.Result[Queue] {
 	queues := resque.GetList("queues")
 	var data []Queue
+	filtered := 0
 	for _, queue := range queues {
 		if resque.ShouldFilterString(filter, queue) {
+			filtered++
 			continue
 		}
 		structure := Queue{
@@ -37,7 +39,7 @@ func GetQueueList(filter resque.Filter) resque.Result[Queue] {
 	return resque.Result[Queue]{
 		Filter:   filter,
 		Total:    len(data),
-		Filtered: filter.Filtered,
+		Filtered: filtered,
 		Items:    data,
 	}
 }
