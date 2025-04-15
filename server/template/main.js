@@ -36,9 +36,10 @@ async function clearQueueRequest(queue) {
     }
 }
 
-async function getApi(path, filter, start = 0, offset = 25) {
+async function getApi(path, filter, start, offset) {
     const url = `/api/v1/${path}?${query(filter)}&start=${start}&offset=${offset}`;
-    const response = await fetch(url);
+    const signal = abortController.signal;
+    const response = await fetch(url, { signal });
     if (!response.ok) {
         throw new Error(`Response status: ${response.status}`);
     }
@@ -46,6 +47,10 @@ async function getApi(path, filter, start = 0, offset = 25) {
     return await response.json()
 }
 
-function onlyUnique(value, index, array) {
-    return array.indexOf(value) === index;
+function setPageSize() {
+    localStorage.setItem('pageSize', parseInt(document.getElementById("pageSize").value));
+}
+
+function pageSize() {
+    return localStorage.getItem('pageSize');
 }

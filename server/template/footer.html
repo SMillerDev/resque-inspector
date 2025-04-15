@@ -1,110 +1,138 @@
 {{define "footer"}}
 <span class="float-end">
     Connected to <code>{{$.dsn}}</code>
-    {{ if eq .page "jobs" }}, loading <select id="pageSize" class="form-select-sm"><option>25</option><option>50</option></select> items {{ end }}
+    {{ if eq .page "jobs" }}, loading <select id="pageSize" class="form-select-sm" onchange="setPageSize(); loadJobs();"><option>25</option><option>50</option></select> items {{ end }}
 </span>
-    </div>
-    <script src="/js/main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-            crossorigin="anonymous"></script>
-    <script>
-        function loadData(page) {
-            switch (page) {
-                case 'queues':
-                    loadQueues();
-                    break;
-                case 'workers':
-                    loadWorkers()
-                    break;
-                case '':
-                    loadJobs()
-                    break;
-                default:
-                    console.warn(`No data to load for ${page}`)
-                    break;
+</div>
+<script src="/js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+<script>
+    let abortController = new AbortController();
+    let offset = 0;
+    let loading = false;
+    if (localStorage.getItem("pageSize") === null) {
+        setPageSize();
+    }
+
+    function loadData(page) {
+        switch (page) {
+            case 'queues':
+                loadQueues();
+                break;
+            case 'workers':
+                loadWorkers()
+                break;
+            case 'jobs':
+                loadJobs()
+                break;
+            default:
+                console.error(`No data to load for ${page}`)
+                break;
+        }
+    }
+
+    function loadJobs() {
+        if (loading) {abortController.abort("Reloading data");}
+        loading = true;
+        const filter = generateFilter();
+        getApi(`queues/${filter.queue}/jobs`, filter, offset, pageSize()).then(function (json) {
+            loading = false;
+            if (json === null) {
+                console.log("No job data!")
+                return
             }
-        }
+            if (filter.queue === 'failed') {
+                document.getElementById("exceptions-wrapper").classList.remove("d-none");
+            } else {
+                document.getElementById("exceptions-wrapper").classList.add("d-none");
+            }
 
-        function loadJobs() {
-            const filter = generateFilter();
-            getApi(`queues/${filter.queue}/jobs`, filter).then(function (json) {
-                if (json === null) {
-                    console.log("No job data!")
-                    return
+            let classes = json["classes"];
+            let classHtml = `<option ${filter.class ? '' : 'selected'} value="">-- Select class --</option>`;
+            for (let className in classes) {
+                let count = classes[className];
+                classHtml += `<option value='${className}' ${(filter.class === className) ? 'selected' : ''}>${className} (${count} items)</option>`;
+            }
+
+            document.getElementById("classes").innerHTML = classHtml;
+
+            let exceptions = json["exceptions"];
+            let exceptionHtml = `<option ${filter.class ? '' : 'selected'} value="">-- Select exception --</option>`;
+            for (let exceptionName in exceptions) {
+                let count = exceptions[exceptionName];
+                exceptionHtml += `<option value='${exceptionName}' ${(filter.exception === exceptionName) ? 'selected' : ''}>${exceptionName} (${count} items)</option>`;
+            }
+
+            document.getElementById("exceptions").innerHTML = exceptionHtml;
+
+            let html = "";
+            json["items"].forEach(item => {
+                if ('error' in item) {
+                    let date = new Date(item["payload"]["queue_time"] * 1000);
+                    html += `<tr><td>${item["payload"]["class"]}</td><td>${date.toISOString()}</td></tr>`
+                } else {
+                    let date = new Date(item["queue_time"] * 1000);
+                    html += `<tr><td>${item["class"]}</td><td>${date.toISOString()}</td></tr>`
                 }
-                if (filter.queue !== 'failed') {
-                    document.getElementById("exceptions-wrapper").classList.add("d-none");
-                }
-
-                let classes = json["classes"].filter(onlyUnique);
-                let classHtml = `<option ${filter.class ? '' : 'selected'} value="">-- Select class --</option>`;
-                classes.forEach(className => {
-                    classHtml += `<option value='${className}' ${(filter.class === className) ? 'selected' : ''}>${className}</option>`;
-                });
-                document.getElementById("classes").innerHTML = classHtml;
-
-
-                let html = "";
-                json["items"].forEach(item => {
-                    html += `<tr><td>${item["class"]}</td><td>${(new Date(item["queue_time"] * 1000)).toISOString()}</td></tr>`
-                });
-                document.getElementById("jobList").innerHTML = `<thead><tr><th scope="col">Class</th><th scope="col">Queued At</th></tr></thead><tbody>${html}</tbody>`;
-            }).catch(function (reason) {
-                console.log(reason)
             });
-        }
+            document.getElementById("jobList").innerHTML = `<thead><tr><th scope="col">Class</th><th scope="col">Queued At</th></tr></thead><tbody>${html}</tbody>`;
+        }).catch(function (reason) {
+            console.log(reason)
+        });
+    }
 
-        function loadQueues() {
-            const filter = {};
-            getApi("queues", filter).then(function (json) {
-                if (json === null) {
-                    console.log("No Queue data!")
-                    return
-                }
-                let html = "";
-                json["items"].forEach(item => {
-                    html += `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('${item["id"]}')" class="btn btn-danger">Clear</button></td></tr>`
+    function loadQueues() {
+        const filter = {};
+        getApi("queues", filter).then(function (json) {
+            if (json === null) {
+                console.log("No Queue data!")
+                return
+            }
+            let html = "";
+            json["items"].forEach(item => {
+                html += `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('${item["id"]}')" class="btn btn-danger">Clear</button></td></tr>`
+            });
+            let table = document.getElementById("queueList");
+            table.innerHTML = `<thead><tr><th scope="col">Queue</th><th scope="col">Items</th><th scope="col"></th></tr></thead><tbody>${html}</tbody>`;
+        }).catch(function (reason) {
+            console.log(reason)
+        });
+    }
+
+    function loadWorkers() {
+        const filter = {};
+        getApi("workers", filter).then(function (json) {
+            if (json === null) {
+                console.log("No worker data!")
+                return
+            }
+            let html = "";
+            for (const key in json["items"]) {
+                const list = json["items"][key];
+                list.forEach(item => {
+                    if (item["entry"]["class"] === "") {
+                        html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td></td></tr>`;
+                        return;
+                    }
+
+                    html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>$JSON.stringify({item["entry"])}</td></tr>`
                 });
-                let table = document.getElementById("queueList");
-                table.innerHTML = `<thead><tr><th scope="col">Queue</th><th scope="col">Items</th><th scope="col"></th></tr></thead><tbody>${html}</tbody>`;
-            }).catch(function (reason) {
-                console.log(reason)
-            });
-        }
 
-        function loadWorkers() {
-            const filter = {};
-            getApi("workers", filter).then(function (json) {
-                if (json === null) {
-                    console.log("No worker data!")
-                    return
-                }
-                let html = "";
-                for (const key in json["items"]) {
-                    const list = json["items"][key];
-                    list.forEach(item => {
-                        if (item["entry"]["class"] === "") {
-                            html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td></td></tr>`;
-                            return;
-                        }
+            }
+            let table = document.getElementById("workerList");
+            table.innerHTML = `<thead><tr><th scope="col">Worker</th><th scope="col">Items</th></tr></thead><tbody>${html}</tbody>`;
+        }).catch(function (reason) {
+            console.log(reason)
+        });
+    }
 
-                        html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>$JSON.stringify({item["entry"])}</td></tr>`
-                    });
-
-                }
-                let table = document.getElementById("workerList");
-                table.innerHTML = `<thead><tr><th scope="col">Worker</th><th scope="col">Items</th></tr></thead><tbody>${html}</tbody>`;
-            }).catch(function (reason) {
-                console.log(reason)
-            });
-        }
-
-        function clearQueue(queue) {
-            clearQueueRequest(queue);
-            loadQueues();
-        }
-    </script>
-    </body>
-    </html>
+    function clearQueue(queue) {
+        clearQueueRequest(queue);
+        loadQueues();
+    }
+</script>
+</body>
+</html>
 {{end}}

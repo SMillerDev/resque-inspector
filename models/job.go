@@ -39,8 +39,8 @@ func (f FailedJob) Stringify() string {
 
 func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque.Result[JobInterface] {
 	var entries []string
-	var classes = make([]string, 0)
-	var exceptions = make([]string, 0)
+	var classes = make(map[string]int)
+	var exceptions = make(map[string]int)
 	var data = make([]JobInterface, 0)
 	filtered := 0
 
@@ -62,8 +62,8 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 				continue
 			}
 
-			classes = append(classes, job.Payload.Class)
-			exceptions = append(exceptions, job.Exception)
+			classes[job.Payload.Class]++
+			exceptions[job.Exception]++
 			data = append(data, job)
 			continue
 		}
@@ -78,7 +78,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 			continue
 		}
 
-		classes = append(classes, job.Class)
+		classes[job.Class]++
 		data = append(data, job)
 	}
 

@@ -6,13 +6,13 @@ import (
 )
 
 type Result[T any] struct {
-	Filter     Filter   `json:"filter"`
-	Total      int      `json:"total"`
-	Selected   int      `json:"selected"`
-	Filtered   int      `json:"filtered"`
-	Classes    []string `json:"classes"`
-	Exceptions []string `json:"exceptions"`
-	Items      []T      `json:"items"`
+	Filter     Filter         `json:"filter"`
+	Total      int            `json:"total"`
+	Selected   int            `json:"selected"`
+	Filtered   int            `json:"filtered"`
+	Classes    map[string]int `json:"classes"`
+	Exceptions map[string]int `json:"exceptions"`
+	Items      []T            `json:"items"`
 }
 
 type NamedResult[T any] struct {
