@@ -71,8 +71,9 @@ func setupJson() {
 	jsonOut = baseJsonOut || subJsonOut
 }
 func setupDebug() {
-	resque.Debug = baseDebug || subDebug
-	models.Debug = baseDebug || subDebug
+	debug = baseDebug || subDebug
+	resque.Debug = debug
+	models.Debug = debug
 }
 func setupDsn() {
 	var dsn string
@@ -82,9 +83,9 @@ func setupDsn() {
 	} else if subDsnFlag != "" {
 		dsn = subDsnFlag
 	} else if baseHost != defaultRedisHost && basePort != defaultRedisPort {
-		dsn = fmt.Sprintf("redis://%s:%d", baseHost, basePort)
+		dsn = dsnFromHostPort(baseHost, basePort)
 	} else {
-		dsn = fmt.Sprintf("redis://%s:%d", subHost, subPort)
+		dsn = dsnFromHostPort(subHost, subPort)
 	}
 
 	envDsn := parseEnvironmentForDSN()
@@ -94,6 +95,10 @@ func setupDsn() {
 
 	resque.Dsn = dsn
 	server.Dsn = dsn
+}
+
+func dsnFromHostPort(host string, port int) string {
+	return fmt.Sprintf("redis://%s:%d", host, port)
 }
 
 func setupSubCommands() map[string]*flag.FlagSet {
@@ -146,9 +151,12 @@ func parseEnvironmentForDSN() string {
 		if port == "" {
 			port = strconv.Itoa(defaultRedisPort)
 		}
-		return fmt.Sprintf("%s:%s", host, port)
+		iport, _ := strconv.Atoi(port)
+		return dsnFromHostPort(host, iport)
 	}
 
-	log.Default().Println("No environment variable set, using default")
+	if debug {
+		log.Default().Println("No environment variable set, using default")
+	}
 	return ""
 }

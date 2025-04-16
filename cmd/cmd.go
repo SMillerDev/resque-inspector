@@ -14,6 +14,7 @@ var subHost string
 var baseHost string
 var subPort int
 var basePort int
+var debug bool
 
 const defaultRedisPort = 6379
 const defaultRedisHost = "127.0.0.1"
