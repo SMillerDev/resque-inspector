@@ -93,7 +93,7 @@ func prepareClient() {
 	if Client != nil {
 		return
 	}
-	preClient, err := valkey.NewClient(valkey.ClientOption{InitAddress: []string{Dsn}})
+	preClient, err := valkey.NewClient(valkey.MustParseURL(Dsn))
 	if err != nil {
 		log.Default().Fatal(err)
 	}

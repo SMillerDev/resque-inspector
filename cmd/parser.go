@@ -82,9 +82,9 @@ func setupDsn() {
 	} else if subDsnFlag != "" {
 		dsn = subDsnFlag
 	} else if baseHost != defaultRedisHost && basePort != defaultRedisPort {
-		dsn = fmt.Sprintf("%s:%d", baseHost, basePort)
+		dsn = fmt.Sprintf("redis://%s:%d", baseHost, basePort)
 	} else {
-		dsn = fmt.Sprintf("%s:%d", subHost, subPort)
+		dsn = fmt.Sprintf("redis://%s:%d", subHost, subPort)
 	}
 
 	envDsn := parseEnvironmentForDSN()
