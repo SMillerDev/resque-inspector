@@ -14,6 +14,8 @@ function generateFilter() {
         queue: queue,
         startDate: 0,
         endDate: Date.now(),
+        start: offset,
+        end: pageSize(),
     }
 }
 
@@ -37,7 +39,7 @@ async function clearQueueRequest(queue) {
 }
 
 async function getApi(path, filter, start, offset) {
-    const url = `/api/v1/${path}?${query(filter)}&start=${start}&offset=${offset}`;
+    const url = `/api/v1/${path}?${query(filter)}`;
     const signal = abortController.signal;
     const response = await fetch(url, { signal });
     if (!response.ok) {
