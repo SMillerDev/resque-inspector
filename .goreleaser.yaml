@@ -73,9 +73,3 @@ dockers:
 
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
-
-gomod:
-  proxy: true
-  env:
-    - GOPROXY=https://proxy.golang.org,direct
-    - GOSUMDB=sum.golang.org
