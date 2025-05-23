@@ -71,7 +71,6 @@ dockers:
       - "ghcr.io/smillerdev/{{.ProjectName}}:latest-amd64"
     use: buildx
     dockerfile: Containerfile
-    skip_push: true
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--pull"
@@ -86,7 +85,6 @@ dockers:
     use: buildx
     goarch: arm64
     dockerfile: Containerfile
-    skip_push: true
     build_flag_templates:
       - "--platform=linux/arm64/v8"
       - "--pull"
