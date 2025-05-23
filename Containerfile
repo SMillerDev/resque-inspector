@@ -1,17 +1,8 @@
-# builder
-FROM goreleaser/goreleaser:latest AS builder
-
-WORKDIR /build
-
-COPY . .
-
-RUN goreleaser build --single-target --snapshot --clean
-
 # Create a production stage to run the application binary
-FROM scratch AS production
+FROM scratch
 
 WORKDIR /app
-COPY --from=builder /build/dist/resque-inspector*/resque-inspector ./
+COPY resque-inspector ./
 
 EXPOSE 5678
 CMD ["/app/resque-inspector", "serve"]
