@@ -7,6 +7,7 @@ import (
 	"os"
 	"resque-inspector/models"
 	"resque-inspector/resque"
+	"resque-inspector/server"
 )
 
 func PrintJsonResult(data interface{}) {
@@ -33,4 +34,38 @@ func PrintJobCmdResult(data resque.Result[models.JobInterface]) {
 
 func filterFromCmdline() resque.Filter {
 	return resque.Filter{}
+}
+
+func setupJson() {
+	jsonOut = baseJsonOut || subJsonOut
+}
+func setupDebug() {
+	debug = baseDebug || subDebug
+	resque.Debug = debug
+	models.Debug = debug
+}
+func setupDsn() {
+	var dsn string
+
+	if baseDsnFlag != "" {
+		dsn = baseDsnFlag
+	} else if subDsnFlag != "" {
+		dsn = subDsnFlag
+	} else if baseHost != defaultRedisHost && basePort != defaultRedisPort {
+		dsn = dsnFromHostPort(baseHost, basePort)
+	} else {
+		dsn = dsnFromHostPort(subHost, subPort)
+	}
+
+	envDsn := parseEnvironmentForDSN()
+	if envDsn != "" {
+		dsn = envDsn
+	}
+
+	resque.Dsn = dsn
+	server.Dsn = dsn
+}
+
+func dsnFromHostPort(host string, port int) string {
+	return fmt.Sprintf("redis://%s:%d", host, port)
 }

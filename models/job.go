@@ -10,6 +10,9 @@ import (
 
 type JobInterface interface {
 	Stringify() string
+	PayloadString() string
+	Identifier() string
+	QueueIdentifier() string
 }
 type Job struct {
 	Class     string                   `json:"class"`
@@ -17,10 +20,18 @@ type Job struct {
 	Id        string                   `json:"id"`
 	Prefix    string                   `json:"prefix"`
 	QueueTime float64                  `json:"queue_time"`
+	RetryTime float64                  `json:"retry_time"`
 }
 
 func (f Job) Stringify() string {
 	return fmt.Sprintf("class: %s", f.Class)
+}
+func (f Job) Identifier() string      { return f.Id }
+func (f Job) QueueIdentifier() string { return "" }
+func (f Job) PayloadString() string {
+	f.RetryTime = float64(time.Now().Unix())
+	str, _ := json.Marshal(f)
+	return string(str)
 }
 
 type FailedJob struct {
@@ -34,8 +45,11 @@ type FailedJob struct {
 }
 
 func (f FailedJob) Stringify() string {
-	return fmt.Sprintf("error: %s\n\texception: %s\n\tqueue: %s\n", f.Error, f.Exception, f.Queue)
+	return fmt.Sprintf("error: %s\n\texception: %s\n\tqueue: %s\n%s", f.Error, f.Exception, f.Queue, f.Payload.Stringify())
 }
+func (f FailedJob) QueueIdentifier() string { return f.Queue }
+func (f FailedJob) Identifier() string      { return f.Payload.Identifier() }
+func (f FailedJob) PayloadString() string   { return f.Payload.PayloadString() }
 
 func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque.Result[JobInterface] {
 	var entries []string
@@ -102,6 +116,13 @@ func ShouldFilterJob(f resque.Filter, job Job) bool {
 		return true
 	}
 
+	if f.Id != "" && f.Id != job.Id {
+		if Debug {
+			log.Default().Println("Filter job id does not match.")
+		}
+		return true
+	}
+
 	return false
 }
 
@@ -119,6 +140,13 @@ func ShouldFilterFailedJob(f resque.Filter, failed FailedJob) bool {
 		return true
 	}
 
+	if f.Id != "" && f.Id != failed.Payload.Id {
+		if Debug {
+			log.Default().Println("Filter job id does not match.")
+		}
+		return true
+	}
+
 	return false
 }
 
@@ -127,5 +155,5 @@ func (f FailedJob) Retry() error {
 	if err != nil {
 		return err
 	}
-	return resque.Retry(f.Queue, string(out))
+	return resque.Queue(f.Queue, string(out))
 }

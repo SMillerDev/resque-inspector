@@ -6,7 +6,6 @@ import (
 	"log"
 	"maps"
 	"os"
-	"resque-inspector/models"
 	"resque-inspector/resque"
 	"resque-inspector/server"
 	"slices"
@@ -67,40 +66,6 @@ func ParseCommandLine(version string, date string) {
 	}
 }
 
-func setupJson() {
-	jsonOut = baseJsonOut || subJsonOut
-}
-func setupDebug() {
-	debug = baseDebug || subDebug
-	resque.Debug = debug
-	models.Debug = debug
-}
-func setupDsn() {
-	var dsn string
-
-	if baseDsnFlag != "" {
-		dsn = baseDsnFlag
-	} else if subDsnFlag != "" {
-		dsn = subDsnFlag
-	} else if baseHost != defaultRedisHost && basePort != defaultRedisPort {
-		dsn = dsnFromHostPort(baseHost, basePort)
-	} else {
-		dsn = dsnFromHostPort(subHost, subPort)
-	}
-
-	envDsn := parseEnvironmentForDSN()
-	if envDsn != "" {
-		dsn = envDsn
-	}
-
-	resque.Dsn = dsn
-	server.Dsn = dsn
-}
-
-func dsnFromHostPort(host string, port int) string {
-	return fmt.Sprintf("redis://%s:%d", host, port)
-}
-
 func setupSubCommands() map[string]*flag.FlagSet {
 	readSubcommands := []string{"queues", "jobs", "workers"}
 	deleteSubcommands := []string{"clear"}
@@ -151,8 +116,8 @@ func parseEnvironmentForDSN() string {
 		if port == "" {
 			port = strconv.Itoa(defaultRedisPort)
 		}
-		iport, _ := strconv.Atoi(port)
-		return dsnFromHostPort(host, iport)
+		iPort, _ := strconv.Atoi(port)
+		return dsnFromHostPort(host, iPort)
 	}
 
 	if debug {

@@ -23,28 +23,17 @@
         </div>
     </div>
 </form>
-<table class="table" id="jobList">
-    <thead>
+<table class="table">
+    <thead id="job-header">
     <tr>
         <th scope="col"></th>
         <th scope="col">Class</th>
-        <th scope="col">Exception</th>
         <th scope="col">Queued at</th>
-        <th scope="col">Failed at</th>
+        <th scope="col" class="{{ if eq .selected "failed"}}{{else}}d-none{{ end}}">Exception</th>
+        <th scope="col" class="{{ if eq .selected "failed"}}{{else}}d-none{{ end}}">Failed at</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody id="job-list">
     </tbody>
 </table>
-<div class="align-content-center" style="display: none;">
-    <nav aria-label="Pagination for job information">
-        <ul class="pagination justify-content-center">
-            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
-            <li class="page-item"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">Next</a></li>
-        </ul>
-    </nav>
-</div>
 {{template "footer" $}}

@@ -131,12 +131,15 @@ func Clear(key string) error {
 		log.Println("[Resque] Clear", key)
 	}
 
-	err := Client.Do(ctx, Client.B().Del().Key(key).Build()).Error()
+	_, err := Client.Do(ctx, Client.B().Del().Key(key).Build()).AsBool()
+	if Debug && err != nil {
+		log.Printf("[Resque] Clearing '%s' failed: %s", key, err)
+	}
 
 	return err
 }
 
-func Delete(queue string, payload string) error {
+func Delete(queue string, id string) error {
 	prepareClient()
 	ctx := context.Background()
 	key := ensurePrefix(queue)
@@ -145,17 +148,17 @@ func Delete(queue string, payload string) error {
 		log.Println("[Resque] Delete", key)
 	}
 
-	return Client.Do(ctx, Client.B().Lrem().Key(key).Count(1).Element(payload).Build()).Error()
+	return Client.Do(ctx, Client.B().Lrem().Key(key).Count(1).Element(id).Build()).Error()
 }
 
-func Retry(queue string, payload string) error {
+func Queue(queue string, id string) error {
 	prepareClient()
 	ctx := context.Background()
 	key := ensurePrefix(queue)
 
 	if Debug {
-		log.Println("[Resque] Retry", key)
+		log.Println("[Resque] Queue", key)
 	}
 
-	return Client.Do(ctx, Client.B().Rpush().Key(key).Element(payload).Build()).Error()
+	return Client.Do(ctx, Client.B().Rpush().Key(key).Element(id).Build()).Error()
 }

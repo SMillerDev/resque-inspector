@@ -1,5 +1,5 @@
 {{template "header" $}}
-<table class="table" id="workerList">
+<table class="table">
     <thead>
     <tr>
         <th scope="col">Name</th>
@@ -8,18 +8,7 @@
         <th scope="col">Entry</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody id="worker-list">
     </tbody>
 </table>
-<div class="align-content-center">
-    <nav aria-label="Pagination for job information">
-        <ul class="pagination justify-content-center" style="display: none;">
-            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
-            <li class="page-item"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">Next</a></li>
-        </ul>
-    </nav>
-</div>
 {{template "footer" $}}

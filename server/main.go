@@ -40,7 +40,7 @@ func Serve() {
 
 	http.Handle("/api/v1/{type}", gziphandler.GzipHandler(http.HandlerFunc(getRootApi)))
 	http.Handle("/api/v1/queues/{queue}/jobs", gziphandler.GzipHandler(http.HandlerFunc(getJobsApi)))
-	http.Handle("/api/v1/queues/{queue}/jobs/{id}", gziphandler.GzipHandler(http.HandlerFunc(retryJobApi)))
+	http.Handle("/api/v1/queues/{queue}/jobs/{id}", gziphandler.GzipHandler(http.HandlerFunc(modifyJobApi)))
 	http.Handle("/api/v1/queues/{queue}", gziphandler.GzipHandler(http.HandlerFunc(clearApi)))
 
 	err := http.ListenAndServe(httpAddr, nil)

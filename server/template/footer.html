@@ -1,11 +1,15 @@
 {{define "footer"}}
+    <div class="d-flex justify-content-center" id="loading-spinner">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
 <span class="float-end">
     Connected to <code>{{$.dsn}}</code>
     {{ if eq .page "jobs" }}, loading <select id="pageSize" class="form-select-sm" onchange="setPageSize(); loadJobs();"><option>25</option><option>50</option></select> items {{ end }}
 </span>
 </div>
-    <div id="modalList">
-    </div>
+    <div id="modal-list"></div>
 <script src="/js/main.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -38,6 +42,7 @@
     function loadJobs() {
         if (loading) {abortController.abort("Reloading data");}
         loading = true;
+        document.getElementById("loading-spinner").classList.remove("d-none");
         const filter = generateFilter();
         getApi(`queues/${filter.queue}/jobs`, filter).then(function (json) {
             loading = false;
@@ -51,107 +56,46 @@
                 document.getElementById("exceptions-wrapper").classList.add("d-none");
             }
 
-            let classes = json["classes"];
-            let classHtml = `<option ${filter.class ? '' : 'selected'} value="">-- Select class --</option>`;
-            for (let className in classes) {
-                let count = classes[className];
-                classHtml += `<option value='${className}' ${(filter.class === className) ? 'selected' : ''}>${className} (${count} items)</option>`;
-            }
-
-            document.getElementById("classes").innerHTML = classHtml;
-
-            let exceptions = json["exceptions"];
-            let exceptionHtml = `<option ${filter.class ? '' : 'selected'} value="">-- Select exception --</option>`;
-            for (let exceptionName in exceptions) {
-                let count = exceptions[exceptionName];
-                exceptionHtml += `<option value='${exceptionName}' ${(filter.exception === exceptionName) ? 'selected' : ''}>${exceptionName} (${count} items)</option>`;
-            }
-
-            document.getElementById("exceptions").innerHTML = exceptionHtml;
+            document.getElementById("classes").innerHTML = getJobClassSelect(json["classes"], filter);
+            document.getElementById("exceptions").innerHTML = getJobExceptionSelect(json["exceptions"], filter);
 
             let rowHtml = "";
             let modalList = "";
             json["items"].forEach(item => {
-                let job = filter.queue === 'failed' ? item.payload : item
-                let additionalHtml = "";
-                let additionalModalFields = "";
-                let date = new Date(job.queue_time * 1000);
-                let id = crypto.randomUUID();
-                if (filter.queue === 'failed') {
-                    additionalHtml = `<td>${item.exception}: ${item.error}</td><td>${item.failed_at}</td>`
-                    additionalModalFields = `<label for="queue-${id}" class="form-label">Queue</label>
-                                             <input type="text" id="queue-${id}" class="form-control" readonly value="${item.queue}"/>
-                                             <label for="worker-${id}" class="form-label">Worker</label>
-                                             <input type="text" id="worker-${id}" class="form-control" readonly value="${item.worker}"/>
-                                             <label for="failed-${id}" class="form-label">Failed</label>
-                                             <input type="text" id="failed-${id}" class="form-control" readonly value="${item.failed_at}"/>
-                                             <label for="exception-${id}" class="form-label">Exception</label>
-                                             <input type="text" id="exception-${id}" class="form-control" readonly value="${item.exception}"/>
-                                             <label for="message-${id}" class="form-label">Message</label>
-                                             <input type="text" id="message-${id}" class="form-control" readonly value="${item.error}"/>
-                                             <label for="backtrace-${id}" class="form-label">Backtrace</label>
-                                             <textarea readonly id="backtrace-${id}" class="form-control" style="height: 250px;">${item.backtrace.join('\n')}</textarea>`;
-                }
-                rowHtml += `<tr><td></td><td>${job.class}</td><td>${date.toISOString()}</td>${additionalHtml}<td><button class="btn btn-outline-info" type="button" data-bs-toggle="modal" data-bs-target="#detailModal-${id}">Details</button></td></tr>`;
-                modalList += `<div class="modal fade" id="detailModal-${id}" tabindex="-1" aria-labelledby="modalLabel-${id}" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="modalLabel-${id}">Job details</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <label for="class-${id}" class="form-label">Class</label>
-        <input type="text" id="class-${id}" class="form-control" readonly value="${job.class}"/>
-        <label for="id-${id}" class="form-label">Id</label>
-        <input type="text" id="id-${id}" class="form-control" readonly value="${job.id}"/>
-        <label for="queued-${id}" class="form-label">Queued</label>
-        <input type="text" id="queued-${id}" class="form-control" readonly value="${date.toISOString()}"/>
-        <label for="args-${id}" class="form-label">Arguments</label>
-        <textarea readonly id="args-${id}" class="form-control" style="height: 250px;">${JSON.stringify(job.args, null, 2)}</textarea>
-        ${additionalModalFields}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-danger" onclick="deleteJob('${job.id}')">Delete</button>
-        <button type="button" class="btn btn-warning" onclick="retryJob('${job.id}')">Retry</button>
-      </div>
-    </div>
-  </div>
-</div>`;
+                rowHtml += getJobRow(item, filter.queue === 'failed')
+                modalList += getJobModal(item, filter.queue === 'failed');
             });
-            let additionalHtml = "";
-            if (filter.queue === 'failed') {
-                additionalHtml = `<th scope="col">Exception</th><th scope="col">Failed At</th>`;
-            }
-            document.getElementById("jobList").innerHTML = `<thead><tr><th scope="col"></th><th scope="col">Class</th><th scope="col">Queued At</th>${additionalHtml}<th></th></tr></thead><tbody>${rowHtml}</tbody>`;
-            document.getElementById("modalList").innerHTML = modalList;
+
+            document.getElementById("loading-spinner").classList.add("d-none");
+            document.getElementById("modal-list").innerHTML = modalList;
+            document.getElementById("job-header").innerHTML = getJobsHeader(filter.queue === 'failed');
+            document.getElementById("job-list").innerHTML = rowHtml;
         }).catch(function (reason) {
             console.log(reason)
         });
     }
 
     function loadQueues() {
-        const filter = {};
-        getApi("queues", filter).then(function (json) {
+        document.getElementById("loading-spinner").classList.remove("d-none");
+        getApi("queues", {}).then(function (json) {
             if (json === null) {
                 console.log("No Queue data!")
                 return
             }
             let html = "";
             json["items"].forEach(item => {
-                html += `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('${item["id"]}')" class="btn btn-danger">Clear</button></td></tr>`
+                html += getQueueRow(item)
             });
-            let table = document.getElementById("queueList");
-            table.innerHTML = `<thead><tr><th scope="col">Queue</th><th scope="col">Items</th><th scope="col"></th></tr></thead><tbody>${html}</tbody>`;
+            document.getElementById("loading-spinner").classList.add("d-none");
+            document.getElementById("queue-list").innerHTML = html;
         }).catch(function (reason) {
             console.log(reason)
         });
     }
 
     function loadWorkers() {
-        const filter = {};
-        getApi("workers", filter).then(function (json) {
+        document.getElementById("loading-spinner").classList.remove("d-none");
+        getApi("workers", {}).then(function (json) {
             if (json === null) {
                 console.log("No worker data!")
                 return
@@ -160,33 +104,14 @@
             for (const key in json["items"]) {
                 const list = json["items"][key];
                 list.forEach(item => {
-                    if (item["entry"]["class"] === "") {
-                        html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td></td></tr>`;
-                        return;
-                    }
-
-                    html += `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>$JSON.stringify({item["entry"])}</td></tr>`
+                    html += getWorkerRow(key, item);
                 });
-
             }
-            let table = document.getElementById("workerList");
-            table.innerHTML = `<thead><tr><th scope="col">Queue</th><th scope="col">Host</th><th scope="col">Socket</th><th scope="col">Item</th></tr></thead><tbody>${html}</tbody>`;
+            document.getElementById("loading-spinner").classList.add("d-none");
+            document.getElementById("worker-list").innerHTML = html;
         }).catch(function (reason) {
             console.log(reason)
         });
-    }
-
-    function clearQueue(queue) {
-        clearQueueRequest(queue);
-        loadQueues();
-    }
-
-    function deleteJob(id) {
-        console.log("Tried to delete: " + id)
-    }
-
-    function retryJob(id) {
-        console.log("Tried to retry: " + id)
     }
 </script>
 </body>

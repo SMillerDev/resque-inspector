@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"resque-inspector/models"
+	"resque-inspector/resque"
 	"strconv"
 )
 
@@ -48,6 +49,7 @@ func getRootApi(w http.ResponseWriter, r *http.Request) {
 }
 
 func getJobsApi(w http.ResponseWriter, r *http.Request) {
+	log.Default().Printf("[API] %s %s request\n", r.Method, r.RequestURI)
 	if r.Method != "GET" {
 		returnError(w, http.StatusMethodNotAllowed, map[string]interface{}{})
 		return
@@ -80,8 +82,9 @@ func getJobsApi(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, string(out))
 }
 
-func retryJobApi(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+func modifyJobApi(w http.ResponseWriter, r *http.Request) {
+	log.Default().Printf("[API] %s %s request\n", r.Method, r.RequestURI)
+	if r.Method != "POST" && r.Method != "DELETE" {
 		returnError(w, http.StatusMethodNotAllowed, map[string]interface{}{})
 		return
 	}
@@ -93,9 +96,28 @@ func retryJobApi(w http.ResponseWriter, r *http.Request) {
 		returnError(w, http.StatusBadRequest, map[string]interface{}{})
 		return
 	}
+	result := models.GetQueue(queueVal).GetJobList(resque.Filter{Id: idVal}, 0, 1000)
+	if len(result.Items) < 1 {
+		returnError(w, http.StatusNotFound, map[string]interface{}{})
+		return
+	}
+
+	if r.Method == "POST" {
+		err := resque.Queue(result.Items[0].QueueIdentifier(), result.Items[0].PayloadString())
+		if err != nil {
+			returnError(w, http.StatusInternalServerError, map[string]interface{}{})
+		}
+	}
+	if r.Method == "DELETE" {
+		err := resque.Delete(queueVal, result.Items[0].Identifier())
+		if err != nil {
+			returnError(w, http.StatusInternalServerError, map[string]interface{}{})
+		}
+	}
 }
 
 func clearApi(w http.ResponseWriter, r *http.Request) {
+	log.Default().Printf("[API] %s %s request\n", r.Method, r.RequestURI)
 	if r.Method != "DELETE" {
 		returnError(w, http.StatusMethodNotAllowed, map[string]interface{}{})
 		return

@@ -23,6 +23,7 @@ type NamedResult[T any] struct {
 }
 
 type Filter struct {
+	Id        string
 	Regex     string
 	Class     string
 	Exception string
