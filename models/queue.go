@@ -23,7 +23,7 @@ func GetQueueList(filter resque.Filter) resque.Result[Queue] {
 		structure := Queue{
 			Id:       queue,
 			Name:     queue,
-			JobCount: int(resque.GetEntryCount("queue:" + queue)),
+			JobCount: int(resque.GetEntryCount(queue)),
 			Jobs:     []Job{},
 		}
 

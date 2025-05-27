@@ -1,4 +1,4 @@
-function generateFilter() {
+function generateFilter(start, end) {
     let queue = document.getElementById("queues").value;
     let regex = document.getElementById("regex").value;
     let className = document.getElementById("classes").value;
@@ -14,8 +14,8 @@ function generateFilter() {
         queue: queue,
         startDate: 0,
         endDate: Date.now(),
-        start: offset,
-        end: pageSize(),
+        start: start,
+        end: end,
     }
 }
 
@@ -28,6 +28,21 @@ function query(obj) {
     }
 
     return str.join("&");
+}
+
+function toggleCheckboxes(source) {
+    let checkboxes = document.getElementsByName('job-selector');
+    for (let i = 0, n = checkboxes.length; i < n; i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
+
+function showEditBanner(source) {
+    if (source.checked) {
+        document.getElementById("edit-bar").classList.remove("d-none");
+    } else {
+        document.getElementById("edit-bar").classList.add("d-none");
+    }
 }
 
 async function clearQueueRequest(queue) {
@@ -45,6 +60,7 @@ async function deleteJobRequest(queue, id) {
         throw new Error(`Response status: ${response.status}`);
     }
 }
+
 async function retryJobRequest(queue, id) {
     const url = `/api/v1/queues/${queue}/jobs/${id}`;
     const response = await fetch(url, {method: "POST"});
@@ -65,11 +81,12 @@ async function getApi(path, filter) {
 }
 
 function setPageSize() {
+    offset = 0;
     localStorage.setItem('pageSize', parseInt(document.getElementById("pageSize").value));
 }
 
 function pageSize() {
-    return localStorage.getItem('pageSize');
+    return Number(localStorage.getItem('pageSize'));
 }
 
 function clearQueue(queue) {
@@ -78,13 +95,35 @@ function clearQueue(queue) {
 }
 
 function deleteJob(queue, id) {
-    console.log("Tried to delete: " + id)
-    deleteJobRequest(queue, id)
+    let ids = []
+    if (id === null) {
+        let checkboxes = document.getElementsByName('job-selector');
+        for (let i = 0, n = checkboxes.length; i < n; i++) {
+            if (!checkboxes[i].checked) {
+                continue;
+            }
+            ids.push(checkboxes[i].value)
+        }
+    } else {
+        ids.push(id)
+    }
+    ids.forEach( (value) => deleteJobRequest(queue, value))
 }
 
 function retryJob(queue, id) {
-    console.log("Tried to retry: " + id)
-    retryJobRequest(queue, id)
+    let ids = []
+    if (id === null) {
+        let checkboxes = document.getElementsByName('job-selector');
+        for (let i = 0, n = checkboxes.length; i < n; i++) {
+            if (!checkboxes[i].checked) {
+                continue;
+            }
+            ids.push(checkboxes[i].value)
+        }
+    } else {
+        ids.push(id)
+    }
+    ids.forEach( (value) => retryJobRequest(queue, value))
 }
 
 /**
@@ -97,6 +136,7 @@ function getWorkerRow(key, item) {
     }
     return `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>${entry}</td></tr>`;
 }
+
 /**
  * Queue methods
  */
@@ -115,7 +155,7 @@ function getJobsHeader(failed) {
         additionalHtml = `<th scope="col">Exception</th><th scope="col">Failed At</th>`;
     }
 
-    return `<tr><th scope="col"><input type="checkbox" class="form-check-inline" id="check-all"/></th><th scope="col">Class</th><th scope="col">Queued At</th>${additionalHtml}<th></th></tr>`;
+    return `<tr><th scope="col"><input type="checkbox" class="form-check-inline" onclick="showEditBanner(this);toggleCheckboxes(this)" id="check-all"/></th><th scope="col">Class</th><th scope="col">Queued At</th>${additionalHtml}<th></th></tr>`;
 }
 
 function getJobClassSelect(items, filter) {
@@ -139,6 +179,7 @@ function getJobExceptionSelect(items, filter) {
 }
 
 function getJobRow(item, failed) {
+    console.debug(failed)
     let job = failed ? item.payload : item
     let date = new Date(job.queue_time * 1000);
 
@@ -147,7 +188,7 @@ function getJobRow(item, failed) {
         additionalHtml = `<td>${item.exception}: ${item.error}</td><td>${item.failed_at}</td>`
     }
 
-    return `<tr><td><input type="checkbox" class="form-check-inline" id="check-${job.id}"/></td><td>${job.class}</td><td>${date.toISOString()}</td>${additionalHtml}<td><button class="btn btn-outline-info" type="button" data-bs-toggle="modal" data-bs-target="#detailModal-${job.id}">Details</button></td></tr>`;
+    return `<tr><td><input type="checkbox" class="form-check-inline" name="job-selector" id="check-${job.id}" value="${job.id}" onclick="showEditBanner(this)"/></td><td>${job.class}</td><td>${date.toISOString()}</td>${additionalHtml}<td><button class="btn btn-outline-info" type="button" data-bs-toggle="modal" data-bs-target="#detailModal-${job.id}">Details</button></td></tr>`;
 }
 
 function getJobModal(item, failed) {

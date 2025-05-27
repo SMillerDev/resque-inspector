@@ -72,7 +72,6 @@ func getJobsApi(w http.ResponseWriter, r *http.Request) {
 	result := models.GetQueue(queueVal).GetJobList(filterFromRequest(r), int64(start), int64(end))
 	out, err := json.Marshal(result)
 	if err != nil {
-		log.Default().Println(result)
 		log.Default().Printf("could not marshal json: %s\n", err)
 		returnError(w, http.StatusInternalServerError, map[string]interface{}{})
 		return
@@ -103,16 +102,23 @@ func modifyJobApi(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
+		log.Default().Println(result.Items[0])
 		err := resque.Queue(result.Items[0].QueueIdentifier(), result.Items[0].PayloadString())
 		if err != nil {
 			returnError(w, http.StatusInternalServerError, map[string]interface{}{})
+			return
 		}
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 	if r.Method == "DELETE" {
 		err := resque.Delete(queueVal, result.Items[0].Identifier())
 		if err != nil {
 			returnError(w, http.StatusInternalServerError, map[string]interface{}{})
+			return
 		}
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 }
 

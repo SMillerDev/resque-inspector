@@ -139,7 +139,7 @@ func Clear(key string) error {
 	return err
 }
 
-func Delete(queue string, id string) error {
+func Delete(queue string, element string) error {
 	prepareClient()
 	ctx := context.Background()
 	key := ensurePrefix(queue)
@@ -148,17 +148,35 @@ func Delete(queue string, id string) error {
 		log.Println("[Resque] Delete", key)
 	}
 
-	return Client.Do(ctx, Client.B().Lrem().Key(key).Count(1).Element(id).Build()).Error()
+	err := Client.Do(ctx, Client.B().Lrem().Key(key).Count(1).Element(element).Build()).Error()
+	if err != nil {
+		log.Default().Printf("Failed to delete entry: %s", element)
+		log.Default().Println(err)
+	} else {
+		log.Default().Printf("Deleted entry: %s", element)
+	}
+
+	return err
 }
 
-func Queue(queue string, id string) error {
+func Queue(queue string, element string) error {
 	prepareClient()
 	ctx := context.Background()
 	key := ensurePrefix(queue)
 
 	if Debug {
-		log.Println("[Resque] Queue", key)
+		log.Println("[Resque] Queueing on: ", key)
+		log.Println("[Resque] Payload: ", element)
 	}
 
-	return Client.Do(ctx, Client.B().Rpush().Key(key).Element(id).Build()).Error()
+	err := Client.Do(ctx, Client.B().Rpush().Key(key).Element(element).Build()).Error()
+
+	if err != nil {
+		log.Default().Printf("Failed to delete entry: %s", element)
+		log.Default().Println(err)
+	} else {
+		log.Default().Printf("Deleted entry: %s", element)
+	}
+
+	return err
 }

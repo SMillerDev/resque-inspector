@@ -23,13 +23,13 @@ type NamedResult[T any] struct {
 }
 
 type Filter struct {
-	Id        string
-	Regex     string
-	Class     string
-	Exception string
-	Queue     string
-	StartDate time.Time
-	EndDate   time.Time
+	Id        string    `json:"id,omitempty"`
+	Regex     string    `json:"regex,omitempty"`
+	Class     string    `json:"class,omitempty"`
+	Exception string    `json:"exception,omitempty"`
+	Queue     string    `json:"queue,omitempty"`
+	StartDate time.Time `json:"start_date,omitempty"`
+	EndDate   time.Time `json:"end_date,omitempty"`
 }
 
 func ShouldFilterString(f Filter, queue string) bool {

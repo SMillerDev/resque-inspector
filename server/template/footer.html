@@ -18,6 +18,8 @@
     let abortController = new AbortController();
     let offset = 0;
     let loading = false;
+    let rowHtml = "";
+    let modalList = "";
     if (localStorage.getItem("pageSize") === null) {
         setPageSize();
     }
@@ -31,7 +33,7 @@
                 loadWorkers()
                 break;
             case 'jobs':
-                loadJobs()
+                loadJobs(0)
                 break;
             default:
                 console.error(`No data to load for ${page}`)
@@ -39,15 +41,20 @@
         }
     }
 
-    function loadJobs() {
+    function loadJobs(start) {
         if (loading) {abortController.abort("Reloading data");}
+        offset = start
         loading = true;
+        if (offset < 1) {
+            modalList = ''
+            rowHtml = ''
+        }
         document.getElementById("loading-spinner").classList.remove("d-none");
-        const filter = generateFilter();
+        const filter = generateFilter(offset, offset+pageSize());
         getApi(`queues/${filter.queue}/jobs`, filter).then(function (json) {
             loading = false;
             if (json === null) {
-                console.log("No job data!")
+                console.error("No job data!")
                 return
             }
             if (filter.queue === 'failed') {
@@ -59,8 +66,6 @@
             document.getElementById("classes").innerHTML = getJobClassSelect(json["classes"], filter);
             document.getElementById("exceptions").innerHTML = getJobExceptionSelect(json["exceptions"], filter);
 
-            let rowHtml = "";
-            let modalList = "";
             json["items"].forEach(item => {
                 rowHtml += getJobRow(item, filter.queue === 'failed')
                 modalList += getJobModal(item, filter.queue === 'failed');
@@ -71,7 +76,7 @@
             document.getElementById("job-header").innerHTML = getJobsHeader(filter.queue === 'failed');
             document.getElementById("job-list").innerHTML = rowHtml;
         }).catch(function (reason) {
-            console.log(reason)
+            console.error(reason)
         });
     }
 
@@ -79,7 +84,7 @@
         document.getElementById("loading-spinner").classList.remove("d-none");
         getApi("queues", {}).then(function (json) {
             if (json === null) {
-                console.log("No Queue data!")
+                console.error("No Queue data!")
                 return
             }
             let html = "";
@@ -89,7 +94,7 @@
             document.getElementById("loading-spinner").classList.add("d-none");
             document.getElementById("queue-list").innerHTML = html;
         }).catch(function (reason) {
-            console.log(reason)
+            console.error(reason)
         });
     }
 
@@ -97,7 +102,7 @@
         document.getElementById("loading-spinner").classList.remove("d-none");
         getApi("workers", {}).then(function (json) {
             if (json === null) {
-                console.log("No worker data!")
+                console.error("No worker data!")
                 return
             }
             let html = "";
@@ -110,9 +115,30 @@
             document.getElementById("loading-spinner").classList.add("d-none");
             document.getElementById("worker-list").innerHTML = html;
         }).catch(function (reason) {
-            console.log(reason)
+            console.error(reason)
         });
     }
+
+    function throttle(func, timeFrame) {
+        var lastTime = 0;
+        return function (...args) {
+            var now = new Date();
+            if (now - lastTime >= timeFrame) {
+                func(...args);
+                lastTime = now;
+            }
+        };
+    }
+
+    const handleInfiniteScroll = () => {
+        const endOfPage = window.innerHeight + window.pageYOffset >= document.body.offsetHeight;
+        if (endOfPage) {
+            let nextStart = Number(offset+pageSize());
+            console.debug(`Loading ${nextStart} until ${nextStart + pageSize()}`)
+            loadJobs(nextStart);
+        }
+    };
+    window.addEventListener("scroll", throttle(handleInfiniteScroll, 100));
 </script>
 </body>
 </html>
