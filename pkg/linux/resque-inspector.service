@@ -1,0 +1,9 @@
+[Unit]
+Description=Resque Inspector Interface
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/resque-inspector serve
+
+[Install]
+WantedBy=multi-user.target
