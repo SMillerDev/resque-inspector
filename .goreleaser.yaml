@@ -57,6 +57,10 @@ nfpms:
         dst: /etc/systemd/system/
         type: config
 
+      - src: pkg/linux/service.env.default
+        dst: /etc/resque-inspector/service.env
+        type: config
+
       - src: /etc/systemd/system/resque-inspector.service
         dst: /etc/systemd/system/resque-web.service
         type: "symlink"

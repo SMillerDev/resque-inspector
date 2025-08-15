@@ -3,6 +3,7 @@ Description=Resque Inspector Interface
 
 [Service]
 Type=simple
+EnvironmentFile=/etc/resque-inspector/service.env
 ExecStart=/usr/bin/resque-inspector serve
 
 [Install]
