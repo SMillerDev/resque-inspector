@@ -59,7 +59,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 	var data = make([]JobInterface, 0)
 	filtered := 0
 
-	if q.JobCount == 0 && q.Id != "failed" {
+	if q.JobCount == 0 && q.IsFailed() == false {
 		return resque.Result[JobInterface]{
 			Filter:     filter,
 			Filtered:   filtered,
@@ -71,11 +71,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 		}
 	}
 
-	if q.Id == "failed" {
-		entries = resque.GetEntries(q.Id, start, limit)
-	} else {
-		entries = resque.GetEntries("queue:"+q.Id, start, limit)
-	}
+	entries = resque.GetEntries(q.queuePathForRequest(), start, limit)
 
 	if len(entries) == 0 {
 		return resque.Result[JobInterface]{
@@ -90,7 +86,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 	}
 
 	for _, entry := range entries {
-		if q.Id == "failed" {
+		if q.IsFailed() == true {
 			var job FailedJob
 			err := json.Unmarshal([]byte(entry), &job)
 			if err != nil {
