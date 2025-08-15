@@ -2,10 +2,11 @@ package resque
 
 import (
 	"context"
-	"github.com/valkey-io/valkey-go"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/valkey-io/valkey-go"
 )
 
 const Prefix = "resque:"
@@ -145,7 +146,7 @@ func Delete(queue string, element string) error {
 	key := ensurePrefix(queue)
 
 	if Debug {
-		log.Println("[Resque] Delete", key)
+		log.Printf("[Resque] Delete %s in queue %s", element, key)
 	}
 
 	err := Client.Do(ctx, Client.B().Lrem().Key(key).Count(1).Element(element).Build()).Error()
@@ -172,10 +173,10 @@ func Queue(queue string, element string) error {
 	err := Client.Do(ctx, Client.B().Rpush().Key(key).Element(element).Build()).Error()
 
 	if err != nil {
-		log.Default().Printf("Failed to delete entry: %s", element)
+		log.Default().Printf("Failed to queue entry: %s", element)
 		log.Default().Println(err)
 	} else {
-		log.Default().Printf("Deleted entry: %s", element)
+		log.Default().Printf("Queued entry: %s", element)
 	}
 
 	return err

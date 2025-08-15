@@ -52,7 +52,7 @@ func (f FailedJob) QueueIdentifier() string { return f.Queue }
 func (f FailedJob) Identifier() string      { return f.Payload.Identifier() }
 func (f FailedJob) PayloadString() string   { return f.Payload.PayloadString() }
 
-func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque.Result[JobInterface] {
+func (q Queue) GetJobList(filter Filter, start int64, limit int64) resque.Result[JobInterface] {
 	var entries []string
 	var classes = make(map[string]int)
 	var exceptions = make(map[string]int)
@@ -61,7 +61,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 
 	if q.JobCount == 0 && q.IsFailed() == false {
 		return resque.Result[JobInterface]{
-			Filter:     filter,
+			Filter:     resque.Filter(filter),
 			Filtered:   filtered,
 			Total:      q.JobCount,
 			Selected:   0,
@@ -75,7 +75,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 
 	if len(entries) == 0 {
 		return resque.Result[JobInterface]{
-			Filter:     filter,
+			Filter:     resque.Filter(filter),
 			Filtered:   filtered,
 			Total:      q.JobCount,
 			Selected:   0,
@@ -92,7 +92,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 			if err != nil {
 				continue
 			}
-			if ShouldFilterFailedJob(filter, job) {
+			if ShouldFilterFailedJob(resque.Filter(filter), job) {
 				filtered++
 				continue
 			}
@@ -108,7 +108,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 		if err != nil {
 			continue
 		}
-		if ShouldFilterJob(filter, job) {
+		if ShouldFilterJob(resque.Filter(filter), job) {
 			filtered++
 			continue
 		}
@@ -118,7 +118,7 @@ func (q Queue) GetJobList(filter resque.Filter, start int64, limit int64) resque
 	}
 
 	return resque.Result[JobInterface]{
-		Filter:     filter,
+		Filter:     resque.Filter(filter),
 		Filtered:   filtered,
 		Total:      q.JobCount,
 		Selected:   len(data),

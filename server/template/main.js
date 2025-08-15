@@ -1,3 +1,9 @@
+/**
+ * Generate a filter
+ * @param {number} start Start of the selection
+ * @param {number} end   End of the selection
+ * @returns {{regex: *, class: *, exception: string, queue: *, startDate: number, endDate: number, start, end}}
+ */
 function generateFilter(start, end) {
     let queue = document.getElementById("queues").value;
     let regex = document.getElementById("regex").value;
@@ -19,17 +25,26 @@ function generateFilter(start, end) {
     }
 }
 
-function query(obj) {
+/**
+ * Build a query from a filter
+ * @param {object} filter
+ * @returns {string}
+ */
+function query(filter) {
     let str = [];
-    for (const p in obj) {
-        if (obj.hasOwnProperty(p) && obj[p] != undefined) {
-            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+    for (const p in filter) {
+        if (filter.hasOwnProperty(p) && filter[p] != undefined) {
+            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(filter[p]));
         }
     }
 
     return str.join("&");
 }
 
+/**
+ * Toggle all checkboxes
+ * @param {Node<HTMLElement>} source
+ */
 function toggleCheckboxes(source) {
     let checkboxes = document.getElementsByName('job-selector');
     for (let i = 0, n = checkboxes.length; i < n; i++) {
@@ -37,6 +52,10 @@ function toggleCheckboxes(source) {
     }
 }
 
+/**
+ * Show the edit banner
+ * @param {Node<HTMLElement>} source
+ */
 function showEditBanner(source) {
     if (source.checked) {
         document.getElementById("edit-bar").classList.remove("d-none");
@@ -45,14 +64,25 @@ function showEditBanner(source) {
     }
 }
 
-async function clearQueueRequest(queue) {
-    const url = `/api/v1/queues/${queue}`;
+/**
+ * Request a queue be cleared
+ * @param {string} name
+ * @returns {Promise<void>}
+ */
+async function clearQueueRequest(name) {
+    const url = `/api/v1/queues/${name}`;
     const response = await fetch(url, {method: "DELETE"});
     if (!response.ok) {
         throw new Error(`Response status: ${response.status}`);
     }
 }
 
+/**
+ * Request a job be deleted
+ * @param {string} queue
+ * @param {string }id
+ * @returns {Promise<void>}
+ */
 async function deleteJobRequest(queue, id) {
     const url = `/api/v1/queues/${queue}/jobs/${id}`;
     const response = await fetch(url, {method: "DELETE"});
@@ -61,6 +91,12 @@ async function deleteJobRequest(queue, id) {
     }
 }
 
+/**
+ * Request a job be retried
+ * @param {string} queue
+ * @param {string }id
+ * @returns {Promise<void>}
+ */
 async function retryJobRequest(queue, id) {
     const url = `/api/v1/queues/${queue}/jobs/${id}`;
     const response = await fetch(url, {method: "POST"});
@@ -69,6 +105,12 @@ async function retryJobRequest(queue, id) {
     }
 }
 
+/**
+ * Get an item from the API
+ * @param {string} path
+ * @param {object} filter
+ * @returns {Promise<any>}
+ */
 async function getApi(path, filter) {
     const url = `/api/v1/${path}?${query(filter)}`;
     const signal = abortController.signal;
@@ -89,11 +131,19 @@ function pageSize() {
     return Number(localStorage.getItem('pageSize'));
 }
 
-function clearQueue(queue) {
-    clearQueueRequest(queue);
-    loadQueues();
+/**
+ * Clear queue
+ * @param {string} name
+ */
+function clearQueue(name) {
+    clearQueueRequest(name).then(() => loadQueues());
 }
 
+/**
+ * Delete a job
+ * @param {string}      queue Name of the queue
+ * @param {string|null} id    ID of the job
+ */
 function deleteJob(queue, id) {
     let ids = []
     if (id === null) {
@@ -110,6 +160,11 @@ function deleteJob(queue, id) {
     ids.forEach( (value) => deleteJobRequest(queue, value))
 }
 
+/**
+ * Retry a job
+ * @param {string}      queue Name of the queue
+ * @param {string|null} id    ID of the job
+ */
 function retryJob(queue, id) {
     let ids = []
     if (id === null) {
@@ -126,29 +181,39 @@ function retryJob(queue, id) {
     ids.forEach( (value) => retryJobRequest(queue, value))
 }
 
+/* Worker methods */
 /**
- * Worker methods
+ * Get a row of workers
+ * @param {string} key
+ * @param {object} item
+ * @returns {string}
  */
 function getWorkerRow(key, item) {
     let entry = ""
     if (item["entry"]["class"] !== "") {
         entry = JSON.stringify(item["entry"])
     }
-    return `<tr><td>${key}</td><td>${item["host"]}</td><td>${item["socket"]}</td><td>${entry}</td></tr>`;
+    return `<tr><td>${key}</td><td>${item.host}</td><td>${item.socket}</td><td>${entry}</td></tr>`;
 }
 
-/**
- * Queue methods
- */
+/* Queue methods */
 
+/**
+ * Get a row of queues
+ * @param {object} item
+ * @returns {string}
+ */
 function getQueueRow(item) {
-    return `<tr><td>${item["name"]}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item["id"]}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('${item["id"]}')" class="btn btn-danger">Clear</button></td></tr>`;
+    return `<tr><td>${item.name}</td><td>${item["job_count"]}</td><td><a href="/?queue=${item.id}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('${item.id}')" class="btn btn-danger">Clear</button></td></tr>`;
 }
 
-/**
- * Job methods
- */
+/* Job methods */
 
+/**
+ * Get the correct header for jobs
+ * @param {boolean} failed If the view shows failed items
+ * @returns {string}
+ */
 function getJobsHeader(failed) {
     let additionalHtml = ''
     if (failed) {
@@ -158,6 +223,12 @@ function getJobsHeader(failed) {
     return `<tr><th scope="col"><input type="checkbox" class="form-check-inline" onclick="showEditBanner(this);toggleCheckboxes(this)" id="check-all"/></th><th scope="col">Class</th><th scope="col">Queued At</th>${additionalHtml}<th></th></tr>`;
 }
 
+/**
+ * Get a selector for job classes
+ * @param {object} items
+ * @param {object} filter
+ * @returns {string}
+ */
 function getJobClassSelect(items, filter) {
     let html = `<option ${filter.class ? '' : 'selected'} value="">-- Select class --</option>`;
     for (let key in items) {
@@ -168,6 +239,12 @@ function getJobClassSelect(items, filter) {
     return html
 }
 
+/**
+ * Get a selector for job exceptions
+ * @param {object} items
+ * @param {object} filter
+ * @returns {string}
+ */
 function getJobExceptionSelect(items, filter) {
     let html = `<option ${filter.class ? '' : 'selected'} value="">-- Select exception --</option>`;
     for (let key in items) {
@@ -178,6 +255,12 @@ function getJobExceptionSelect(items, filter) {
     return html
 }
 
+/**
+ * Get a row for a job
+ * @param {object} item
+ * @param {boolean} failed
+ * @returns {string}
+ */
 function getJobRow(item, failed) {
     console.debug(failed)
     let job = failed ? item.payload : item
@@ -191,7 +274,14 @@ function getJobRow(item, failed) {
     return `<tr><td><input type="checkbox" class="form-check-inline" name="job-selector" id="check-${job.id}" value="${job.id}" onclick="showEditBanner(this)"/></td><td>${job.class}</td><td>${date.toISOString()}</td>${additionalHtml}<td><button class="btn btn-outline-info" type="button" data-bs-toggle="modal" data-bs-target="#detailModal-${job.id}">Details</button></td></tr>`;
 }
 
-function getJobModal(item, failed) {
+/**
+ * Get a modal for a job
+ * @param {string} queue   Name of the queue
+ * @param {object} item    Item to parse
+ * @returns {string}
+ */
+function getJobModal(queue, item) {
+    let failed = queue === 'failed'
     let job = failed ? item.payload : item
     let date = new Date(job.queue_time * 1000);
 
@@ -231,8 +321,8 @@ function getJobModal(item, failed) {
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-danger" onclick="deleteJob('failed', '${job.id}')">Delete</button>
-                    <button type="button" class="btn btn-warning" onclick="retryJob('failed', '${job.id}')">Retry</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteJob('${queue}', '${job.id}')">Delete</button>
+                    <button type="button" class="btn btn-warning" onclick="retryJob('${queue}', '${job.id}')">Retry</button>
                   </div>
                 </div>
               </div>

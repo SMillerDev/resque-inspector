@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"resque-inspector/models"
-	"resque-inspector/resque"
 )
 
 //go:embed `img/favicon.ico`
@@ -72,7 +71,7 @@ func getDataSet(page string, selectedQueue string) map[string]interface{} {
 	}
 
 	data["dsn"] = Dsn
-	data["queues"] = models.GetQueueList(resque.Filter{}).Items
+	data["queues"] = models.GetQueueList(models.Filter{}).Items
 	if selectedQueue == "" {
 		data["selected"] = "NONE"
 	} else {

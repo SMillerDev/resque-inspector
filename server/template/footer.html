@@ -30,12 +30,15 @@
         switch (page) {
             case 'queues':
                 loadQueues();
+                document.getElementById("stats").classList.add("d-none");
                 break;
             case 'workers':
                 loadWorkers()
+                document.getElementById("stats").classList.add("d-none");
                 break;
             case 'jobs':
                 loadJobs(0)
+                document.getElementById("stats").classList.remove("d-none");
                 break;
             default:
                 console.error(`No data to load for ${page}`)
@@ -78,7 +81,7 @@
 
             json["items"].forEach(item => {
                 rowHtml += getJobRow(item, filter.queue === 'failed')
-                modalList += getJobModal(item, filter.queue === 'failed');
+                modalList += getJobModal(filter.queue, item);
             });
 
             document.getElementById("loading-spinner").classList.add("d-none");

@@ -15,12 +15,12 @@ type Queue struct {
 	Jobs     []Job  `json:"jobs"`
 }
 
-func GetQueueList(filter resque.Filter) resque.Result[Queue] {
+func GetQueueList(filter Filter) resque.Result[Queue] {
 	queues := resque.GetList("queues")
 	var data []Queue
 	filtered := 0
 	for _, queue := range queues {
-		if resque.ShouldFilterString(filter, queue) {
+		if resque.ShouldFilterString(resque.Filter(filter), queue) {
 			filtered++
 			continue
 		}
@@ -46,7 +46,7 @@ func GetQueueList(filter resque.Filter) resque.Result[Queue] {
 	})
 
 	return resque.Result[Queue]{
-		Filter:   filter,
+		Filter:   resque.Filter(filter),
 		Total:    len(data),
 		Filtered: filtered,
 		Items:    data,
@@ -72,6 +72,14 @@ func (q Queue) IsFailed() bool {
 
 func (q Queue) queuePathForRequest() string {
 	return queuePathForRequest(q.Id)
+}
+
+func (q Queue) DeleteItem(identifier string) error {
+	return resque.Delete(q.queuePathForRequest(), identifier)
+}
+
+func (q Queue) Enqueue(payloadString string) error {
+	return resque.Queue(q.queuePathForRequest(), payloadString)
 }
 
 func queuePathForRequest(queue string) string {

@@ -14,12 +14,12 @@ type WorkerSlot struct {
 	Entry  Job    `json:"entry"`
 }
 
-func GetWorkerList(filter resque.Filter) resque.NamedResult[WorkerSlot] {
+func GetWorkerList(filter Filter) resque.NamedResult[WorkerSlot] {
 	workers := resque.GetList("workers")
 	data := make(map[string][]WorkerSlot)
 	filtered := 0
 	for _, worker := range workers {
-		if resque.ShouldFilterString(filter, worker) {
+		if resque.ShouldFilterString(resque.Filter(filter), worker) {
 			filtered++
 			continue
 		}
@@ -48,7 +48,7 @@ func GetWorkerList(filter resque.Filter) resque.NamedResult[WorkerSlot] {
 	}
 
 	return resque.NamedResult[WorkerSlot]{
-		Filter:   filter,
+		Filter:   resque.Filter(filter),
 		Total:    len(data),
 		Filtered: filtered,
 		Items:    data,

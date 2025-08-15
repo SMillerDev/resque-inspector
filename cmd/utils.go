@@ -32,8 +32,8 @@ func PrintJobCmdResult(data resque.Result[models.JobInterface]) {
 	}
 }
 
-func filterFromCmdline() resque.Filter {
-	return resque.Filter{}
+func filterFromCmdline() models.Filter {
+	return models.Filter{}
 }
 
 func setupJson() {

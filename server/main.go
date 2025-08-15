@@ -3,13 +3,14 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"github.com/NYTimes/gziphandler"
 	"io"
 	"log"
 	"net/http"
-	"resque-inspector/resque"
+	"resque-inspector/models"
 	"strconv"
 	"time"
+
+	"github.com/NYTimes/gziphandler"
 )
 
 const httpAddr = ":5678"
@@ -21,10 +22,10 @@ func returnError(w http.ResponseWriter, code int, data interface{}) {
 	_, _ = io.WriteString(w, string(jsonData))
 }
 
-func filterFromRequest(r *http.Request) resque.Filter {
+func filterFromRequest(r *http.Request) models.Filter {
 	start, _ := strconv.Atoi(r.URL.Query().Get("startDate"))
 	end, _ := strconv.Atoi(r.URL.Query().Get("endDate"))
-	return resque.Filter{
+	return models.Filter{
 		Regex:     r.URL.Query().Get("regex"),
 		Class:     r.URL.Query().Get("class"),
 		Exception: r.URL.Query().Get("exception"),
