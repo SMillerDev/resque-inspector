@@ -23,6 +23,8 @@
     if (localStorage.getItem("pageSize") === null) {
         setPageSize();
     }
+    let classes = {};
+    let exceptions = {};
 
     function loadData(page) {
         switch (page) {
@@ -62,9 +64,17 @@
             } else {
                 document.getElementById("exceptions-wrapper").classList.add("d-none");
             }
+            for (let index in json["classes"]) {
+                if (classes.hasOwnProperty(index) === false) { classes[index] = 0; }
+                classes[index] += json["classes"][index]
+            }
+            for (let index in json["exceptions"]) {
+                if (exceptions.hasOwnProperty(index) === false) { exceptions[index] = 0; }
+                exceptions[index] += json["exceptions"][index]
+            }
 
-            document.getElementById("classes").innerHTML = getJobClassSelect(json["classes"], filter);
-            document.getElementById("exceptions").innerHTML = getJobExceptionSelect(json["exceptions"], filter);
+            document.getElementById("classes").innerHTML = getJobClassSelect(classes, filter);
+            document.getElementById("exceptions").innerHTML = getJobExceptionSelect(exceptions, filter);
 
             json["items"].forEach(item => {
                 rowHtml += getJobRow(item, filter.queue === 'failed')
@@ -75,6 +85,8 @@
             document.getElementById("modal-list").innerHTML = modalList;
             document.getElementById("job-header").innerHTML = getJobsHeader(filter.queue === 'failed');
             document.getElementById("job-list").innerHTML = rowHtml;
+            document.getElementById("total-count").innerHTML = json["total"];
+            document.getElementById("loaded-count").innerHTML = offset < json["total"] ? String(offset + json["items"].length) : json["total"];
         }).catch(function (reason) {
             console.error(reason)
         });
