@@ -8,20 +8,20 @@
     "packages": [
         {
             "name": "colinmollenhour/credis",
-            "version": "v1.16.2",
+            "version": "v1.17.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/colinmollenhour/credis.git",
-                "reference": "db2c0323292e360fdba39bf98c7a405fe3cb05b0"
+                "reference": "f4930b426f6b1238b687a1ffe6ee5af7f835b40a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/colinmollenhour/credis/zipball/db2c0323292e360fdba39bf98c7a405fe3cb05b0",
-                "reference": "db2c0323292e360fdba39bf98c7a405fe3cb05b0",
+                "url": "https://api.github.com/repos/colinmollenhour/credis/zipball/f4930b426f6b1238b687a1ffe6ee5af7f835b40a",
+                "reference": "f4930b426f6b1238b687a1ffe6ee5af7f835b40a",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.6.0"
+                "php": ">=7.4.0"
             },
             "suggest": {
                 "ext-redis": "Improved performance for communicating with redis"
@@ -49,9 +49,9 @@
             "homepage": "https://github.com/colinmollenhour/credis",
             "support": {
                 "issues": "https://github.com/colinmollenhour/credis/issues",
-                "source": "https://github.com/colinmollenhour/credis/tree/v1.16.2"
+                "source": "https://github.com/colinmollenhour/credis/tree/v1.17.0"
             },
-            "time": "2024-12-17T02:24:03+00:00"
+            "time": "2025-02-10T18:58:46+00:00"
         },
         {
             "name": "psr/log",
