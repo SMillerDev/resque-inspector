@@ -1,0 +1,21 @@
+.d-none {
+    display: none;
+}
+
+span.details {
+    float: inline-end;
+}
+
+select#pageSize {
+    max-width: 100px;
+    font-size: small;
+    margin: 0;
+}
+
+section#edit-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+}

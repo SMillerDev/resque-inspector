@@ -11,33 +11,48 @@ import (
 //go:embed `img/favicon.ico`
 var favicon string
 
-//go:embed `template/main.js`
-var js string
+//go:embed `js`
+var jsFs embed.FS
+
+//go:embed `css`
+var cssFs embed.FS
 
 //go:embed `template`
-var LayoutFs embed.FS
+var templateFs embed.FS
 
 var bootstrap *template.Template
 var Dsn string
 
 func getUi(w http.ResponseWriter, r *http.Request) {
-	log.Default().Printf("[Web] %s request\n", r.RequestURI)
+	log.Default().Printf("[Web] %s %s request\n", r.Method, r.RequestURI)
+	if r.Method != "GET" {
+		returnError(w, http.StatusMethodNotAllowed, map[string]interface{}{})
+		return
+	}
 	page := r.PathValue("page")
 	var err error
 	switch r.RequestURI {
+	case "/":
+		w.Header().Set("Location", "/jobs")
+		w.WriteHeader(http.StatusPermanentRedirect)
+		return
 	case "/favicon.ico":
 		w.Header().Set("Content-Type", "img/ico")
 		_, err = w.Write([]byte(favicon))
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		return
 	case "/js/main.js":
-		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
-		_, err = w.Write([]byte(js))
-		w.WriteHeader(200)
+		serveJs(r.RequestURI[1:], w)
+		return
+	case "/css/pico.min.css":
+		serveCss(r.RequestURI[1:], w)
+		return
+	case "/css/main.css":
+		serveCss(r.RequestURI[1:], w)
 		return
 	default:
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		bootstrap, err = template.ParseFS(LayoutFs, "template/*.html")
+		bootstrap, err = template.ParseFS(templateFs, "template/*.html")
 	}
 
 	if err != nil {
@@ -60,6 +75,29 @@ func getUi(w http.ResponseWriter, r *http.Request) {
 		//w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
+}
+
+func serveCss(filename string, w http.ResponseWriter) {
+	serveStatic(filename, "text/css", cssFs, w)
+}
+
+func serveJs(filename string, w http.ResponseWriter) {
+	serveStatic(filename, "text/javascript", jsFs, w)
+}
+
+func serveStatic(filename string, contentType string, fs embed.FS, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", contentType+"; charset=utf-8")
+	file, err := fs.ReadFile(filename)
+	if err != nil {
+		log.Default().Printf("failed to parse %s request: %v", contentType, err)
+		w.WriteHeader(http.StatusNotFound)
+	}
+	_, fileErr := w.Write(file)
+	if fileErr != nil {
+		log.Default().Printf("failed to serve %s request: %v", contentType, err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func getDataSet(page string, selectedQueue string) map[string]interface{} {

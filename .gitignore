@@ -27,3 +27,4 @@ go.work.sum
 dist/
 
 tests/php/vendor
+server/css/pico.min.css
