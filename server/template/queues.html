@@ -12,7 +12,9 @@
         <tr>
             <td>{{.Name}}</td>
             <td>{{.JobCount}}</td>
-            <td><a href="/?queue={{.Id}}" class="btn btn-primary">Jobs</a> <button onclick="clearQueue('{{.Id}}')" class="btn btn-danger">Clear</button>
+            <td>
+                <a href="/?queue={{.Id}}" role="button">Jobs</a>
+                <button onclick="clearQueue('{{.Id}}')" class="danger">Clear</button>
             </td>
         </tr>
     {{end}}

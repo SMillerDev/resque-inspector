@@ -1,46 +1,36 @@
 {{template "header" $}}
 <form method="get">
-    <div class="row">
-        <div class="col">
-            <select class="form-select" aria-label="Queue" id="queues" name="queue" onchange="loadJobs(0)">
-                {{range .queues}}
-                    <option value="{{.Id}}" {{ if eq .Id $.selected }}selected{{ end }}>{{.Name}}</option>
-                {{end}}
-            </select>
-        </div>
-        <div class="col">
-            <select class="form-select" aria-label="Classes" id="classes" name="class" onchange="loadJobs(0)">
-                <option selected value=""> -- Select Class --</option>
-            </select>
-        </div>
+    <fieldset class="grid">
+        <select aria-label="Queue" id="queues" name="queue" onchange="loadJobs(0)">
+            {{range .queues}}
+                <option value="{{.Id}}" {{ if eq .Id $.selected }}selected{{ end }}>{{.Name}}</option>
+            {{end}}
+        </select>
+        <select aria-label="Classes" id="classes" name="class" onchange="loadJobs(0)">
+            <option selected disabled value=""> -- Select Class --</option>
+        </select>
 
-        <div class="col" id="exceptions-wrapper">
-            <select class="form-select" aria-label="Exceptions" id="exceptions" name="exception" onchange="loadJobs(0)">
-                <option selected value=""> -- Select Exception --</option>
-            </select>
-        </div>
-        <div class="col" id="regex-wrapper">
-            <input class="form-control" aria-label="Regex filter" id="regex" name="regex" placeholder=".*" onchange="loadJobs(0)" onkeyup="loadJobs(0)">
-        </div>
-    </div>
+        <select aria-label="Exceptions" id="exceptions" name="exception" onchange="loadJobs(0)">
+            <option selected disabled value=""> -- Select Exception --</option>
+        </select>
+        <input aria-label="Regex filter" id="regex" name="regex" placeholder=".*" onchange="loadJobs(0)" onkeyup="loadJobs(0)" autofocus/>
+    </fieldset>
 </form>
-<table class="table">
+<table>
     <thead id="job-header">
     <tr>
         <th scope="col"></th>
         <th scope="col">Class</th>
         <th scope="col">Queued at</th>
-        <th scope="col" class="{{ if eq .selected "failed"}}{{else}}d-none{{ end}}">Exception</th>
-        <th scope="col" class="{{ if eq .selected "failed"}}{{else}}d-none{{ end}}">Failed at</th>
+        <th scope="col" class="{{ if eq .selected "failed"}}{{ else }}d-none{{ end }}">Exception</th>
+        <th scope="col" class="{{ if eq .selected "failed"}}{{ else }}d-none{{ end }}">Failed at</th>
     </tr>
     </thead>
     <tbody id="job-list">
     </tbody>
 </table>
-<nav class="navbar fixed-bottom d-none navbar-light bg-primary-subtle" id="edit-bar">
-    <div class="container-fluid">
-        <button type="button" class="btn btn-danger align-content-end" onclick="deleteJob(document.getElementById('queues').value, null)">Delete</button>
-        <button type="button" class="btn btn-warning align-content-end {{ if eq .selected "failed"}}{{else}}d-none{{ end}}" onclick="retryJob(document.getElementById('queues').value, null)">Retry</button>
-    </div>
-</nav>
+<section id="edit-bar" class="d-none">
+    <button class="danger" onclick="deleteJob(document.getElementById('queues').value, null)">Delete</button>
+    <button class="warning {{ if eq .selected "failed" }}{{ else }}d-none{{ end }}" onclick="retryJob(document.getElementById('queues').value, null)">Retry</button>
+</section>
 {{template "footer" $}}
