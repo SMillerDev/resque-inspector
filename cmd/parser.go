@@ -104,7 +104,7 @@ func setupSubCommands() map[string]*flag.FlagSet {
 
 func parseEnvironmentForDSN() string {
 	val, isset := os.LookupEnv("REDIS_DSN")
-	if isset {
+	if isset && val != "" {
 		return val
 	}
 	host, issetHost := os.LookupEnv("REDIS_HOST")
