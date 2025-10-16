@@ -70,44 +70,20 @@ nfpms:
       # Prefixes for relocatable packages.
       prefixes:
         - /usr/bin
-dockers:
-  - image_templates:
-      - "ghcr.io/smillerdev/{{.ProjectName}}:{{ .Version }}-amd64"
-      - "ghcr.io/smillerdev/{{.ProjectName}}:latest-amd64"
-    use: buildx
+dockers_v2:
+  - images:
+      - "ghcr.io/smillerdev/{{.ProjectName}}"
+    tags:
+      - "{{ .Version }}"
+      - "latest"
+    labels:
+      "org.opencontainers.image.description": "Resque Inspector queue manager"
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.name": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "{{.GitURL}}"
     dockerfile: Containerfile
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-  - image_templates:
-      - "ghcr.io/smillerdev/{{.ProjectName}}:{{ .Version }}-arm64v8"
-      - "ghcr.io/smillerdev/{{.ProjectName}}:latest-arm64v8"
-    use: buildx
-    goarch: arm64
-    dockerfile: Containerfile
-    build_flag_templates:
-      - "--platform=linux/arm64/v8"
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.name={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source={{.GitURL}}"
-
-docker_manifests:
-  - name_template: "ghcr.io/smillerdev/{{.ProjectName}}:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/smillerdev/{{.ProjectName}}:{{ .Version }}-amd64"
-      - "ghcr.io/smillerdev/{{.ProjectName}}:{{ .Version }}-arm64v8"
-  - name_template: "ghcr.io/smillerdev/{{.ProjectName}}:latest"
-    image_templates:
-      - "ghcr.io/smillerdev/{{.ProjectName}}:latest-amd64"
-      - "ghcr.io/smillerdev/{{.ProjectName}}:latest-arm64v8"
 
 checksum:
   name_template: "checksums.txt"
