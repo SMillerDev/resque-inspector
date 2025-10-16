@@ -1,13 +1,11 @@
 let abortController = new AbortController();
 let offset = 0;
 let loading = false;
-let rowHtml = "";
-let modalList = "";
+let classes;
+let exceptions;
 if (localStorage.getItem("pageSize") === null) {
     setPageSize();
 }
-let classes = {};
-let exceptions = {};
 
 
 
@@ -66,10 +64,6 @@ function loadJobs(start) {
     if (loading) {abortController.abort("Reloading data");}
     offset = start
     loading = true;
-    if (offset < 1) {
-        modalList = ''
-        rowHtml = ''
-    }
 
     document.getElementById("loading-spinner").classList.remove("d-none");
     const filter = generateFilter(offset, offset+pageSize());
@@ -85,6 +79,16 @@ function loadJobs(start) {
         } else {
             document.getElementById("exceptions").classList.add("d-none");
         }
+
+        //Clear lists
+        if (offset < 1) {
+            document.getElementById("edit-bar").classList.add('d-none');
+            document.getElementById("job-list").innerHTML = '';
+            document.getElementById("modal-list").innerHTML = '';
+            classes = {};
+            exceptions = {};
+        }
+
         for (let index in json["classes"]) {
             if (classes.hasOwnProperty(index) === false) { classes[index] = 0; }
             classes[index] += json["classes"][index]
@@ -96,16 +100,23 @@ function loadJobs(start) {
 
         document.getElementById("classes").innerHTML = getJobClassSelect(classes, filter);
         document.getElementById("exceptions").innerHTML = getJobExceptionSelect(exceptions, filter);
+        if (filter.queue === 'failed') {
+            document.getElementById("edit-bar")
+                    .getElementsByClassName('warning')[0].classList.remove('d-none');
+        } else {
+            document.getElementById("edit-bar")
+                .getElementsByClassName('warning')[0].classList.add('d-none');
+        }
 
         json["items"].forEach(item => {
-            rowHtml += getJobRow(item, filter.queue === 'failed')
-            modalList += getJobModal(filter.queue, item);
+            let node = getJobRow(item, filter.queue === 'failed')
+            document.getElementById("job-list").appendChild(node);
+            let modalNode = getJobModal(filter.queue, item);
+            document.getElementById("modal-list").appendChild(modalNode);
         });
 
         document.getElementById("loading-spinner").classList.add("d-none");
-        document.getElementById("modal-list").innerHTML = modalList;
         document.getElementById("job-header").innerHTML = getJobsHeader(filter.queue === 'failed');
-        document.getElementById("job-list").innerHTML = rowHtml;
         document.getElementById("total-count").innerHTML = json["total"];
         document.getElementById("loaded-count").innerHTML = offset < json["total"] ? String(offset + json["items"].length) : json["total"];
     }).catch(function (reason) {
@@ -250,10 +261,23 @@ function toggleCheckboxes(source) {
  * @param {Node<HTMLElement>} source
  */
 function showEditBanner(source) {
-    if (source.checked) {
-        document.getElementById("edit-bar").classList.remove("d-none");
-    } else {
+    let checked = 0;
+    let checkboxes = document.getElementsByName('job-selector');
+    for (let i = 0, n = checkboxes.length; i < n; i++) {
+        if (checkboxes[i].checked === false) { continue; }
+        checked++;
+    }
+
+    if (checked > 1) {
+        return true;
+    }
+
+    console.debug(checked, source.checked)
+
+    if (source.checked === false && checked === 0) {
         document.getElementById("edit-bar").classList.add("d-none");
+    } else {
+        document.getElementById("edit-bar").classList.remove("d-none");
     }
 }
 
@@ -334,7 +358,7 @@ function clearQueue(name) {
 
 /**
  * Delete a job
- * @param {string}      queue Name of the queue
+ * @param {string|null} queue Name of the queue
  * @param {string|null} id    ID of the job
  */
 function deleteJob(queue, id) {
@@ -455,28 +479,40 @@ function getJobExceptionSelect(items, filter) {
  * Get a row for a job
  * @param {object} item
  * @param {boolean} failed
- * @returns {string}
+ * @returns {Node}
  */
 function getJobRow(item, failed) {
     let job = failed ? item.payload : item
     let date = new Date(job.queue_time * 1000);
 
-    let additionalHtml = ''
-    if (failed) {
-        additionalHtml = `<td>${item.exception}: ${item.error}</td><td>${item.failed_at}</td>`
+    const template = document.querySelector("#jobrow");
+
+    // Clone the new row and insert it into the table
+    const clone = template.content.cloneNode(true);
+    let td = clone.querySelectorAll("td");
+    td[1].textContent = job.class;
+    td[2].textContent = date.toISOString();
+    if (failed === false) {
+        td[3].style.display = 'none';
+        td[4].style.display = 'none';
+    } else {
+        td[3].textContent = `${item.exception}: ${item.error}`;
+        td[4].textContent = item.failed_at;
+
     }
 
-    return `<tr>
-                <td>
-                    <input type="checkbox" name="job-selector" id="check-${job.id}" value="${job.id}" onclick="showEditBanner(this)"/>
-                </td>
-                <td>${job.class}</td>
-                <td>${date.toISOString()}</td>
-                ${additionalHtml}
-                <td>
-                    <button class="info" data-target="detailModal-${job.id}" onclick="toggleModal(event)">Details</button>
-                </td>
-            </tr>`;
+    let input = td[0].querySelector("input");
+    if (failed === true) {
+        td[0].setAttribute('queue', item.queue);
+    }
+    input.id = `check-${job.id}`;
+    input.value = job.id;
+
+    let button = td[5].querySelector("button");
+    button.dataset.target = `detailModal-${job.id}`;
+    button.addEventListener('click', (event) => toggleModal(event));
+
+    return clone;
 }
 
 /**
@@ -485,52 +521,96 @@ function getJobRow(item, failed) {
  * @param {string} queue Name of the queue
  * @param {object} item Item to parse
  *
- * @returns {string} The Job modal value
+ * @returns {Node} The Job modal node
  */
 function getJobModal(queue, item) {
     let failed = queue === 'failed'
     let job = failed ? item.payload : item
     let date = new Date(job.queue_time * 1000);
 
-    let additionalModalFields = ''
-    if (failed) {
-        additionalModalFields = `<label for="queue-${job.id}" >Queue</label>
-                                             <input type="text" id="queue-${job.id}" readonly value="${item.queue}"/>
-                                             <label for="worker-${job.id}">Worker</label>
-                                             <input type="text" id="worker-${job.id}" readonly value="${item.worker}"/>
-                                             <label for="failed-${job.id}">Failed</label>
-                                             <input type="text" id="failed-${job.id}" readonly value="${item.failed_at}"/>
-                                             <label for="exception-${job.id}">Exception</label>
-                                             <input type="text" id="exception-${job.id}" readonly value="${item.exception}"/>
-                                             <label for="message-${job.id}">Message</label>
-                                             <input type="text" id="message-${job.id}" readonly value="${item.error}"/>
-                                             <label for="backtrace-${job.id}">Backtrace</label>
-                                             <textarea readonly id="backtrace-${job.id}" style="height: 250px;">${item.backtrace.join('\n')}</textarea>`;
+    const template = document.querySelector("#jobmodal");
+
+    // Clone the new row and insert it into the table
+    const clone = template.content.cloneNode(true);
+
+    let dialog = clone.querySelector('dialog');
+    dialog.id = `detailModal-${job.id}`;
+    dialog.setAttribute('aria-labelledby', `modalLabel-${job.id}`);
+
+    let header = clone.querySelector("header h2");
+    header.id = `modalLabel-${job.id}`;
+
+    let labels = clone.querySelectorAll("label");
+    let inputs = clone.querySelectorAll("input");
+
+    labels[0].setAttribute('for', `class-${job.id}`);
+    inputs[0].value = job.class;
+    inputs[0].id = `class-${job.id}`;
+
+    labels[1].setAttribute('for', `id-${job.id}`);
+    inputs[1].value = job.id;
+    inputs[1].id = `id-${job.id}`;
+
+    labels[2].setAttribute('for', `queued-${job.id}`);
+    inputs[2].value = date.toISOString();
+    inputs[2].id = `queued-${job.id}`;
+
+    let textareas = clone.querySelectorAll("textarea");
+    labels[3].setAttribute('for', `args-${job.id}`);
+    textareas[0].textContent = JSON.stringify(job.args, null, 2);
+    textareas[0].id = `args-${job.id}`;
+
+    if (failed === false) {
+        labels[4].style.display = 'none';
+        inputs[3].style.display = 'none';
+
+        labels[5].style.display = 'none';
+        inputs[4].style.display = 'none';
+
+        labels[6].style.display = 'none';
+        inputs[5].style.display = 'none';
+
+        labels[7].style.display = 'none';
+        inputs[6].style.display = 'none';
+
+        labels[8].style.display = 'none';
+        inputs[7].style.display = 'none';
+
+        labels[9].style.display = 'none';
+        textareas[1].style.display = 'none';
+    } else {
+        labels[4].setAttribute('for', `queue-${job.id}`);
+        inputs[3].value = item.queue;
+        inputs[3].id = `queue-${job.id}`;
+
+        labels[5].setAttribute('for', `worker-${job.id}`);
+        inputs[4].value = item.worker;
+        inputs[4].id = `worker-${job.id}`;
+
+        labels[6].setAttribute('for', `failed-${job.id}`);
+        inputs[5].value = item.failed_at;
+        inputs[5].id = `failed-${job.id}`;
+
+        labels[7].setAttribute('for', `exception-${job.id}`);
+        inputs[6].value = item.exception;
+        inputs[6].id = `exception-${job.id}`;
+
+        labels[8].setAttribute('for', `message-${job.id}`);
+        inputs[7].value = item.error;
+        inputs[7].id = `message-${job.id}`;
+
+        labels[9].setAttribute('for', `backtrace-${job.id}`);
+        textareas[1].textContent = item.backtrace.join('\n');
+        textareas[1].id = `backtrace-${job.id}`;
     }
 
-    return `<dialog id="detailModal-${job.id}" aria-labelledby="modalLabel-${job.id}">
-              <article>
-                <header>
-                    <h2 id="modalLabel-${job.id}">Job details</h2>
-                </header>
-                <form>
-                    <label for="class-${job.id}">Class</label>
-                    <input type="text" id="class-${job.id}" readonly value="${job.class}"/>
-                    <label for="id-${job.id}">Id</label>
-                    <input type="text" id="id-${job.id}" readonly value="${job.id}"/>
-                    <label for="queued-${job.id}">Queued</label>
-                    <input type="text" id="queued-${job.id}" readonly value="${date.toISOString()}"/>
-                    <label for="args-${job.id}">Arguments</label>
-                    <textarea readonly id="args-${job.id}" style="height: 250px;">${JSON.stringify(job.args, null, 2)}</textarea>
-                    ${additionalModalFields}
-                </form>
-                <footer>
-                    <button class="secondary" data-target="detailModal-${job.id}" onclick="toggleModal(event)">Close</button>
-                    <button class="danger" onclick="deleteJob('${queue}', '${job.id}')">Delete</button>
-                    <button class="warning" onclick="retryJob('${queue}', '${job.id}')">Retry</button>
-                </footer>
-              </article>
-            </dialog>`;
+    let buttons = clone.querySelectorAll("button");
+    buttons[0].dataset.target = `detailModal-${job.id}`;
+    buttons[0].addEventListener('click', (event) => toggleModal(event));
+    buttons[1].addEventListener('click', () => deleteJob(queue, job.id));
+    buttons[2].addEventListener('click', () => retryJob(queue, job.id));
+
+    return clone;
 }
 
 /**
