@@ -357,45 +357,65 @@ function clearQueue(name) {
 }
 
 /**
+ * Get IDs to use for a retry/delete
+ * @param {string|null} queue Name of the queue
+ * @param {string|null} id    ID of the job
+ *
+ * @returns Map<string>
+ */
+function getIdsWithQueue(queue, id) {
+    let ids = {}
+    if (id === null) {
+        let checkboxes = document.getElementsByName('job-selector');
+        for (let i = 0, n = checkboxes.length; i < n; i++) {
+            if (!checkboxes[i].checked) {
+                continue;
+            }
+            ids[checkboxes[i].value] = checkboxes[i].hasAttribute('queue') ?
+                checkboxes[i].getAttribute('queue') :
+                document.getElementById('queues').value;
+        }
+    } else {
+        ids[id] = queue
+    }
+
+    return ids
+}
+
+/**
  * Delete a job
  * @param {string|null} queue Name of the queue
  * @param {string|null} id    ID of the job
  */
 function deleteJob(queue, id) {
-    let ids = []
-    if (id === null) {
-        let checkboxes = document.getElementsByName('job-selector');
-        for (let i = 0, n = checkboxes.length; i < n; i++) {
-            if (!checkboxes[i].checked) {
-                continue;
-            }
-            ids.push(checkboxes[i].value)
-        }
-    } else {
-        ids.push(id)
+    let ids = getIdsWithQueue(queue, id);
+    for (const id in ids) {
+        let queue = ids[id];
+        deleteJobRequest(queue, id).then(() => {
+            console.info(`Deleted ${id} from ${queue}`);
+            loadJobs(0);
+        }).catch((reason) => {
+            console.error(`Failed to delete ${id} from ${queue}: ${reason}`)
+        });
     }
-    ids.forEach( (value) => deleteJobRequest(queue, value))
 }
 
 /**
  * Retry a job
- * @param {string}      queue Name of the queue
+ * @param {string|null} queue Name of the queue
  * @param {string|null} id    ID of the job
  */
 function retryJob(queue, id) {
-    let ids = []
-    if (id === null) {
-        let checkboxes = document.getElementsByName('job-selector');
-        for (let i = 0, n = checkboxes.length; i < n; i++) {
-            if (!checkboxes[i].checked) {
-                continue;
-            }
-            ids.push(checkboxes[i].value)
-        }
-    } else {
-        ids.push(id)
+    let ids = getIdsWithQueue(queue, id);
+    for (const id in ids) {
+        let queue = ids[id];
+        retryJobRequest(queue, id).then(() => {
+            console.info(`Requeued ${id} to ${queue}`);
+            loadJobs(0);
+        }).catch((reason) => {
+            console.error(`Failed to requeue ${id} to ${queue}: ${reason}`)
+        });
     }
-    ids.forEach( (value) => retryJobRequest(queue, value))
 }
 
 /* Worker methods */
@@ -503,7 +523,7 @@ function getJobRow(item, failed) {
 
     let input = td[0].querySelector("input");
     if (failed === true) {
-        td[0].setAttribute('queue', item.queue);
+        input.setAttribute('queue', item.queue);
     }
     input.id = `check-${job.id}`;
     input.value = job.id;

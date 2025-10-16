@@ -1,7 +1,9 @@
 package server
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"html/template"
 	"log"
 	"net/http"
@@ -42,13 +44,13 @@ func getUi(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	case "/js/main.js":
-		serveJs(r.RequestURI[1:], w)
+		serveJs(r.RequestURI[1:], w, r)
 		return
 	case "/css/pico.min.css":
-		serveCss(r.RequestURI[1:], w)
+		serveCss(r.RequestURI[1:], w, r)
 		return
 	case "/css/main.css":
-		serveCss(r.RequestURI[1:], w)
+		serveCss(r.RequestURI[1:], w, r)
 		return
 	default:
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -77,27 +79,41 @@ func getUi(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func serveCss(filename string, w http.ResponseWriter) {
-	serveStatic(filename, "text/css", cssFs, w)
+func serveCss(filename string, w http.ResponseWriter, r *http.Request) {
+	serveStatic(filename, "text/css", cssFs, w, r)
 }
 
-func serveJs(filename string, w http.ResponseWriter) {
-	serveStatic(filename, "text/javascript", jsFs, w)
+func serveJs(filename string, w http.ResponseWriter, r *http.Request) {
+	serveStatic(filename, "text/javascript", jsFs, w, r)
 }
 
-func serveStatic(filename string, contentType string, fs embed.FS, w http.ResponseWriter) {
+func serveStatic(filename string, contentType string, fs embed.FS, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", contentType+"; charset=utf-8")
 	file, err := fs.ReadFile(filename)
 	if err != nil {
 		log.Default().Printf("failed to parse %s request: %v", contentType, err)
 		w.WriteHeader(http.StatusNotFound)
 	}
+	etag := computeETag(file)
+	if match := r.Header.Get("If-None-Match"); match == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", "public, max-age=60")
 	_, fileErr := w.Write(file)
 	if fileErr != nil {
 		log.Default().Printf("failed to serve %s request: %v", contentType, err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func computeETag(bytes []byte) string {
+	h := sha256.New()
+	h.Write(bytes)
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func getDataSet(page string, selectedQueue string) map[string]interface{} {
