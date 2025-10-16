@@ -21,7 +21,7 @@ func PrintJsonResult(data interface{}) {
 		log.Default().Fatalf("Could not marshal json: %s\n", err)
 	}
 
-	print(string(jsonData))
+	fmt.Print(string(jsonData))
 	os.Exit(0)
 }
 
