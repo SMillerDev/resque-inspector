@@ -30,7 +30,60 @@
     </tbody>
 </table>
 <section id="edit-bar" class="d-none">
-    <button class="danger" onclick="deleteJob(document.getElementById('queues').value, null)">Delete</button>
-    <button class="warning {{ if eq .selected "failed" }}{{ else }}d-none{{ end }}" onclick="retryJob(document.getElementById('queues').value, null)">Retry</button>
+    <button class="danger" onclick="deleteJob(null, null)">Delete</button>
+    <button class="warning {{ if eq .selected "failed" }}{{ else }}d-none{{ end }}" onclick="retryJob(null, null)">Retry</button>
 </section>
-{{template "footer" $}}
+
+<template id="jobrow">
+    <tr>
+        <td>
+            <input type="checkbox" name="job-selector" id="check-job.id" value="job.id" onclick="showEditBanner(this)"/>
+        </td>
+        <td>Class</td>
+        <td>Date</td>
+        <!-- additionalHtml -->
+        <td>item.exception: item.error</td>
+        <td>item.failed_at</td>
+        <td>
+            <button class="info" data-target="detailModal-job.id">Details</button>
+        </td>
+    </tr>
+</template>
+<template id="jobmodal">
+    <dialog id="detailModal-job.id" aria-labelledby="modalLabel-job.id">
+        <article>
+            <header>
+                <h2 id="modalLabel-job.id">Job details</h2>
+            </header>
+            <form>
+                <label for="class-job.id">Class</label>
+                <input type="text" id="class-job.id" readonly value="job.class"/>
+                <label for="id-job.id">Id</label>
+                <input type="text" id="id-job.id" readonly value="job.id"/>
+                <label for="queued-job.id">Queued</label>
+                <input type="text" id="queued-job.id" readonly value="date.toISOString()"/>
+                <label for="args-job.id">Arguments</label>
+                <textarea readonly id="args-job.id" style="height: 250px;">job.args</textarea>
+                <!-- additionalModalFields -->
+                <label for="queue-job.id" >Queue</label>
+                <input type="text" id="queue-job.id" readonly value="item.queue"/>
+                <label for="worker-job.id">Worker</label>
+                <input type="text" id="worker-job.id" readonly value="item.worker"/>
+                <label for="failed-job.id">Failed</label>
+                <input type="text" id="failed-job.id" readonly value="item.failed_at"/>
+                <label for="exception-job.id">Exception</label>
+                <input type="text" id="exception-job.id" readonly value="item.exception"/>
+                <label for="message-job.id">Message</label>
+                <input type="text" id="message-job.id" readonly value="item.error"/>
+                <label for="backtrace-job.id">Backtrace</label>
+                <textarea readonly id="backtrace-job.id" style="height: 250px;">item.backtrace.join('\n')</textarea>
+            </form>
+            <footer>
+                <button class="secondary" data-target="detailModal-job.id">Close</button>
+                <button class="danger">Delete</button>
+                <button class="warning">Retry</button>
+            </footer>
+        </article>
+    </dialog>
+</template>
+{{ template "footer" $ }}

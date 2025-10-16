@@ -18,4 +18,12 @@ section#edit-bar {
     left: 0;
     right: 0;
     width: 100%;
+
+    background-color: var(--pico-background-color);
+    margin: 0;
+    border-top: 1px var(--pico-primary-border) solid;
+}
+
+#edit-bar button {
+    margin: 1em 1em;
 }
