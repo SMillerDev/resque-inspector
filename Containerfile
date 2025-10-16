@@ -1,9 +1,5 @@
+# Create a production stage to run the application binary
 FROM scratch
-
-# Set these as empty so resque-inspector uses the default
-ENV REDIS_HOST=''
-ENV REDIS_PORT=''
-ENV REDIS_DSN=''
 
 WORKDIR /app
 COPY resque-inspector ./
