@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -43,6 +44,10 @@ func Serve() {
 	http.Handle("/api/v1/queues/{queue}/jobs", gziphandler.GzipHandler(http.HandlerFunc(getJobsApi)))
 	http.Handle("/api/v1/queues/{queue}/jobs/{id}", gziphandler.GzipHandler(http.HandlerFunc(modifyJobApi)))
 	http.Handle("/api/v1/queues/{queue}", gziphandler.GzipHandler(http.HandlerFunc(clearApi)))
+
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "OK %q", "World")
+	})
 
 	err := http.ListenAndServe(httpAddr, nil)
 	if errors.Is(err, http.ErrServerClosed) {
