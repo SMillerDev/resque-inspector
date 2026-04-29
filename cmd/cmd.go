@@ -16,6 +16,9 @@ var subPort int
 var basePort int
 var debug bool
 
+var healthAddr string
+
 const defaultRedisPort = 6379
 const defaultRedisHost = "127.0.0.1"
 const defaultFilter = ".*"
+const defaultHealthAddr = "localhost:5678"

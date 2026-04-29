@@ -55,6 +55,8 @@ func ParseCommandLine(version string, date string) {
 		log.Default().Println("subcommand 'retry' is not yet implemented!")
 	case "serve":
 		server.Serve()
+	case "health":
+		healthCheckCmd(healthAddr)
 	case "version":
 		fmt.Printf("resque-inspector %s, built at %s", version, date)
 	default:
@@ -70,7 +72,7 @@ func setupSubCommands() map[string]*flag.FlagSet {
 	readSubcommands := []string{"queues", "jobs", "workers"}
 	deleteSubcommands := []string{"clear"}
 	writeSubcommands := []string{"retry"}
-	utilSubcommands := []string{"serve", "version"}
+	utilSubcommands := []string{"serve", "version", "health"}
 	allSubCommands := slices.Concat(readSubcommands, deleteSubcommands, writeSubcommands, utilSubcommands)
 
 	subcommands := map[string]*flag.FlagSet{}
@@ -98,6 +100,7 @@ func setupSubCommands() map[string]*flag.FlagSet {
 		set.BoolVar(&subJsonOut, "json", false, "Output content in JSON format")
 		set.BoolVar(&subDebug, "debug", false, "Print debug output")
 	}
+	subcommands["health"].StringVar(&healthAddr, "addr", defaultHealthAddr, "Address of the server to health check")
 
 	return subcommands
 }
