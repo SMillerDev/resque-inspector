@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1
-	github.com/valkey-io/valkey-go v1.0.77
+	github.com/valkey-io/valkey-go v1.0.78
 )
 
 require golang.org/x/sys v0.47.0 // indirect
